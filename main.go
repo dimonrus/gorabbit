@@ -34,11 +34,10 @@ func (srv *RabbitServer) String() string {
 }
 
 // New rabbit Application
-func NewApplication(config Config, app gocli.Application, registry Registry) *Application {
+func NewApplication(config Config, app gocli.Application) *Application {
 	return &Application{
-		config:   config,
-		base:     app,
-		registry: registry,
+		config: config,
+		base:   app,
 	}
 }
 
@@ -48,4 +47,13 @@ func (a *Application) onError(err error, msg string) {
 		a.base.GetLogger(gocli.LogLevelDebug).Errorf("%s: %s", msg, err)
 		a.base.FatalError(fmt.Errorf("%s: %s", msg, err))
 	}
+}
+
+// Get registry
+func (a *Application) GetRegistry() *Registry {
+	if a.registry == nil {
+		registry := make(Registry, 0)
+		a.registry = &registry
+	}
+	return a.registry
 }

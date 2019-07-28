@@ -65,5 +65,5 @@ type RabbitQueue struct {
 type Application struct {
 	config   Config
 	base     gocli.Application
-	registry Registry
+	registry *Registry
 }
