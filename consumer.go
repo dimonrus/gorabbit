@@ -129,17 +129,14 @@ func (a *Application) consumeSingle(item RegistryItem) {
 }
 
 // Start consumer Application
-func Start(app gocli.Application, registry Registry, cfg Config, arguments gocli.Arguments) {
-	app.GetLogger(gocli.LogLevelDebug).Info("Starting AMQP Application...")
+func (a *Application) Consume(arguments gocli.Arguments) {
+	a.base.GetLogger(gocli.LogLevelDebug).Info("Starting AMQP Application...")
 	consumerName := arguments["name"].GetString()
-
-	// Init Application
-	a := NewApplication(cfg, app, registry)
 
 	forever := make(chan os.Signal, 1)
 
 	// Registry item iterator
-	for registryName, registryItem := range registry {
+	for registryName, registryItem := range a.registry {
 		if len(consumerName) == 0 {
 			for num := byte(0); num < registryItem.Count; {
 				a.consumeSingle(registryItem)
@@ -155,10 +152,10 @@ func Start(app gocli.Application, registry Registry, cfg Config, arguments gocli
 		}
 	}
 
-	app.GetLogger(gocli.LogLevelDebug).Info(" [*] Waiting for messages. To exit press CTRL+C")
+	a.base.GetLogger(gocli.LogLevelDebug).Info(" [*] Waiting for messages. To exit press CTRL+C")
 	signal.Notify(forever, os.Interrupt)
 	<-forever
 
-	app.GetLogger(gocli.LogLevelDebug).Info(" [*] All Consumers is shutting down")
+	a.base.GetLogger(gocli.LogLevelDebug).Info(" [*] All Consumers is shutting down")
 	os.Exit(0)
 }
