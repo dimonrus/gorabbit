@@ -136,7 +136,7 @@ func (a *Application) Consume(arguments gocli.Arguments) {
 	forever := make(chan os.Signal, 1)
 
 	// Registry item iterator
-	for registryName, registryItem := range a.registry {
+	for registryName, registryItem := range *a.registry {
 		if len(consumerName) == 0 {
 			for num := byte(0); num < registryItem.Count; {
 				a.consumeSingle(registryItem)
