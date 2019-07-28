@@ -48,12 +48,3 @@ func (a *Application) onError(err error, msg string) {
 		a.base.FatalError(fmt.Errorf("%s: %s", msg, err))
 	}
 }
-
-// Get registry
-func (a *Application) GetRegistry() *Registry {
-	if a.registry == nil {
-		registry := make(Registry, 0)
-		a.registry = &registry
-	}
-	return a.registry
-}

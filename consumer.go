@@ -129,14 +129,14 @@ func (a *Application) consumeSingle(item RegistryItem) {
 }
 
 // Start consumer Application
-func (a *Application) Consume(arguments gocli.Arguments) {
+func (a *Application) Consume(registry Registry, arguments gocli.Arguments) {
 	a.base.GetLogger(gocli.LogLevelDebug).Info("Starting AMQP Application...")
 	consumerName := arguments["name"].GetString()
 
 	forever := make(chan os.Signal, 1)
 
 	// Registry item iterator
-	for registryName, registryItem := range *a.registry {
+	for registryName, registryItem := range registry {
 		if len(consumerName) == 0 {
 			for num := byte(0); num < registryItem.Count; {
 				a.consumeSingle(registryItem)
