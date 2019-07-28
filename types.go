@@ -30,7 +30,6 @@ type RegistryItem struct {
 
 // Consumer entity
 type Consumer struct {
-	app        gocli.Application
 	connection *amqp.Connection
 	channel    *amqp.Channel
 	queue      *amqp.Queue
@@ -60,4 +59,11 @@ type RabbitQueue struct {
 	AutoDelete bool     `yaml:"autoDelete"`
 	RoutingKey []string `yaml:"routingKey"`
 	Arguments  map[string]interface{}
+}
+
+// Rabbit Application
+type Application struct {
+	config   Config
+	base     gocli.Application
+	registry Registry
 }
