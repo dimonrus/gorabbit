@@ -3,26 +3,26 @@ package gorabbit
 import (
 	"fmt"
 	"github.com/dimonrus/gocli"
-	"net/http"
+	"github.com/dimonrus/porterr"
 )
 
 // Get server
-func (c *Config) GetServer(name string) (*RabbitServer, gocli.IError) {
+func (c *Config) GetServer(name string) (*RabbitServer, porterr.IError) {
 	server, ok := c.Servers[name]
 	if !ok {
-		return nil, gocli.NewError(fmt.Sprintf("server %s not found in rabbit config", name), http.StatusInternalServerError)
+		return nil, porterr.NewF(porterr.PortErrorSystem, "server %s not found in rabbit config", name)
 	}
 	if server.Vhost == "" {
-		return nil, gocli.NewError(fmt.Sprintf("vhost is incorrect for server %s in rabbit config", name), http.StatusInternalServerError)
+		return nil, porterr.NewF(porterr.PortErrorSystem, "vhost is incorrect for server %s in rabbit config", name)
 	}
 	return &server, nil
 }
 
 // Get queue
-func (c *Config) GetQueue(name string) (*RabbitQueue, gocli.IError) {
+func (c *Config) GetQueue(name string) (*RabbitQueue, porterr.IError) {
 	queue, ok := c.Queues[name]
 	if !ok {
-		return nil, gocli.NewError(fmt.Sprintf("queue %s not found in rabbit config", name), http.StatusInternalServerError)
+		return nil, porterr.NewF(porterr.PortErrorSystem, "queue %s not found in rabbit config", name)
 	}
 	queue.Name = name
 	return &queue, nil

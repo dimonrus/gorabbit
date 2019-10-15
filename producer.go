@@ -1,14 +1,13 @@
 package gorabbit
 
 import (
-	"fmt"
 	"github.com/dimonrus/gocli"
+	"github.com/dimonrus/porterr"
 	"github.com/streadway/amqp"
-	"net/http"
 )
 
 // Publisher
-func (a *Application) Publish(publishing amqp.Publishing, queue string, server string) gocli.IError {
+func (a *Application) Publish(publishing amqp.Publishing, queue string, server string) porterr.IError {
 	// Get server config
 	srv, e := a.config.GetServer(server)
 	if e != nil {
@@ -22,17 +21,17 @@ func (a *Application) Publish(publishing amqp.Publishing, queue string, server s
 	// get connection string
 	connection, err := amqp.Dial(srv.String())
 	if err != nil {
-		return gocli.NewError(fmt.Sprintf("Can't dial to RabbitMq server (%s): %s", srv.String(), err.Error()), http.StatusInternalServerError)
+		return porterr.NewF(porterr.PortErrorProducer, "Can't dial to RabbitMq server (%s): %s", srv.String(), err.Error())
 	}
 	defer connection.Close()
 	// get channel
 	channel, err := connection.Channel()
 	if err != nil {
-		return gocli.NewError(fmt.Sprintf("Can't get channel from server (%s): %s", server, err.Error()), http.StatusInternalServerError)
+		return porterr.NewF(porterr.PortErrorProducer, "Can't get channel from server (%s): %s", server, err.Error())
 	}
 	// Set confirm mode
 	if err := channel.Confirm(false); err != nil {
-		return gocli.NewError("Confirm mode set failed: "+err.Error(), http.StatusInternalServerError)
+		return porterr.NewF(porterr.PortErrorProducer, "Confirm mode set failed: %s ", err.Error())
 	}
 	// Publish notification
 	confirms := channel.NotifyPublish(make(chan amqp.Confirmation, 1))
@@ -54,12 +53,12 @@ func (a *Application) Publish(publishing amqp.Publishing, queue string, server s
 }
 
 // Publish message
-func (a *Application) publish(channel *amqp.Channel, exchange, key string, mandatory, immediate bool, publishing amqp.Publishing) gocli.IError {
-	var e gocli.IError
+func (a *Application) publish(channel *amqp.Channel, exchange, key string, mandatory, immediate bool, publishing amqp.Publishing) porterr.IError {
+	var e porterr.IError
 	err := channel.Publish(exchange, key, mandatory, immediate, publishing)
 	a.base.GetLogger(gocli.LogLevelDebug).Infoln("PUBLISH: ", string(publishing.Body))
 	if err != nil {
-		e = gocli.NewError(fmt.Sprintf("exchange publish: %s", err.Error()), http.StatusInternalServerError)
+		e = porterr.NewF(porterr.PortErrorProducer, "exchange publish: %s", err.Error())
 		a.base.GetLogger(gocli.LogLevelDebug).Errorf("exchange publish: %s", err)
 	}
 	return e
