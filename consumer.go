@@ -12,20 +12,6 @@ import (
 	"time"
 )
 
-// Notify closing channel
-func (a *Application) notifyChannelClose(channel *amqp.Channel) {
-	ce := make(chan *amqp.Error)
-	channel.NotifyClose(ce)
-	for {
-		select {
-		case cce := <-ce:
-			if cce != nil {
-				a.base.GetLogger(gocli.LogLevelDebug).Error("Channel closed: ", cce)
-			}
-		}
-	}
-}
-
 // Create new consumer
 func (a *Application) NewConsumer(serverName string, queueName string, callback func(d amqp.Delivery)) *Consumer {
 	var err error
@@ -74,7 +60,13 @@ func (a *Application) NewConsumer(serverName string, queueName string, callback 
 }
 
 // Subscribe
-func (a *Application) Subscribe(consumer *Consumer) {
+func (a *Application) Subscribe(item RegistryItem) {
+	// Create new consumer
+	consumer := a.NewConsumer(item.Server, item.Queue, item.Callback)
+	if consumer == nil {
+		a.onError(errors.New("Consumer constructor: "), fmt.Sprintf("Failed to create new consumer for queue: %s", item.Queue))
+		return
+	}
 	// Consumer name
 	rndStr := gohelp.RandString(5)
 	name := fmt.Sprintf("Consumer: %s-%s", consumer.queue.Name, rndStr)
@@ -87,45 +79,70 @@ func (a *Application) Subscribe(consumer *Consumer) {
 	defer consumer.connection.Close()
 	// Close channel
 	defer consumer.channel.Close()
-	// Notify close
-	go a.notifyChannelClose(consumer.channel)
 
 	exit := make(chan bool)
-
+	restart := make(chan bool)
+	ce := make(chan *amqp.Error)
 	go func() {
-		for d := range messages {
-			a.base.GetLogger(gocli.LogLevelDebug).Infof("%s - received a message: \n %s", name, d.Body)
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						a.base.GetLogger(gocli.LogLevelDebug).Errorf("%s - recovered in error: \n %s \n %s", name, r, debug.Stack())
-						time.Sleep(time.Second * 10)
-						err := d.Reject(true)
-						if err != nil {
-							a.base.GetLogger(gocli.LogLevelDebug).Errorf("Reject message error: %s", err.Error())
-						}
-					}
-				}()
-				consumer.process(d)
-				err := d.Ack(true)
-				if err != nil {
-					a.base.GetLogger(gocli.LogLevelDebug).Errorf("Ack message error: %s", err.Error())
-				}
-			}()
+		consumer.channel.NotifyClose(ce)
+		select {
+		case cce := <-ce:
+			if cce != nil {
+				a.base.GetLogger(gocli.LogLevelDebug).Error("Channel closed: ", cce)
+				// Exit from child goroutine
+				exit <- true
+			}
 		}
 	}()
 
-	<-exit
+	go func() {
+		for {
+			select {
+			case d := <-messages:
+				if d.Acknowledger == nil {
+					break
+				}
+				a.base.GetLogger(gocli.LogLevelDebug).Infof("%s - received a message: \n %s", name, d.Body)
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							a.base.GetLogger(gocli.LogLevelDebug).Errorf("%s - recovered in error: \n %s \n %s", name, r, debug.Stack())
+							time.Sleep(time.Second * 10)
+							err := d.Reject(true)
+							if err != nil {
+								a.base.GetLogger(gocli.LogLevelDebug).Errorf("Reject message error: %s", err.Error())
+							}
+						}
+					}()
+					consumer.process(d)
+					err := d.Ack(true)
+					if err != nil {
+						a.base.GetLogger(gocli.LogLevelDebug).Errorf("Ack message error: %s", err.Error())
+						return
+					}
+				}()
+			case <-exit:
+				a.base.GetLogger(gocli.LogLevelDebug).Errorf("Close subscriber: %v \n", name)
+				restart <- true
+				return
+			}
+		}
+	}()
+
+	<-restart
+	// Try to create new consumer automatically
+	pause := time.Duration(60) // seconds
+	a.base.GetLogger(gocli.LogLevelDebug).Infof("Consumer for queue %s will be restarted after: %v seconds", consumer.queue.Name, pause)
+	// Sleep for n seconds
+	time.Sleep(time.Second * pause)
+	go a.Subscribe(item)
 }
 
 // Consume single
 func (a *Application) consumeSingle(item RegistryItem) {
 	a.base.GetLogger(gocli.LogLevelDebug).Infof(`Starting consumer on server: "%s" for queue "%s"`, item.Server, item.Queue)
 	// Subscribe
-	consumer := a.NewConsumer(item.Server, item.Queue, item.Callback)
-	if consumer != nil {
-		go a.Subscribe(consumer)
-	}
+	go a.Subscribe(item)
 }
 
 // Start consumer Application
