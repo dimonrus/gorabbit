@@ -23,7 +23,12 @@ func (a *Application) Publish(publishing amqp.Publishing, queue string, server s
 	if err != nil {
 		return porterr.NewF(porterr.PortErrorProducer, "Can't dial to RabbitMq server (%s): %s", srv.String(), err.Error())
 	}
-	defer connection.Close()
+	defer func() {
+		err := connection.Close()
+		if err != nil {
+			a.GetLogger(gocli.LogLevelErr).Errorln(err)
+		}
+	}()
 	// get channel
 	channel, err := connection.Channel()
 	if err != nil {
@@ -55,11 +60,11 @@ func (a *Application) Publish(publishing amqp.Publishing, queue string, server s
 // Publish message
 func (a *Application) publish(channel *amqp.Channel, exchange, key string, mandatory, immediate bool, publishing amqp.Publishing) porterr.IError {
 	var e porterr.IError
+	a.GetLogger(gocli.LogLevelDebug).Infoln("PUBLISH: ", string(publishing.Body))
 	err := channel.Publish(exchange, key, mandatory, immediate, publishing)
-	a.base.GetLogger(gocli.LogLevelDebug).Infoln("PUBLISH: ", string(publishing.Body))
 	if err != nil {
 		e = porterr.NewF(porterr.PortErrorProducer, "exchange publish: %s", err.Error())
-		a.base.GetLogger(gocli.LogLevelDebug).Errorf("exchange publish: %s", err)
+		a.GetLogger(gocli.LogLevelErr).Errorf("exchange publish: %s", err)
 	}
 	return e
 }
@@ -67,8 +72,8 @@ func (a *Application) publish(channel *amqp.Channel, exchange, key string, manda
 // Check confirm
 func (a *Application) confirmOne(confirms <-chan amqp.Confirmation) {
 	if confirmed := <-confirms; confirmed.Ack {
-		a.base.GetLogger(gocli.LogLevelDebug).Infof("confirmed delivery with delivery tag: %d", confirmed.DeliveryTag)
+		a.GetLogger(gocli.LogLevelDebug).Infof("confirmed delivery with delivery tag: %d", confirmed.DeliveryTag)
 	} else {
-		a.base.GetLogger(gocli.LogLevelDebug).Errorf("failed delivery of delivery tag: %d", confirmed.DeliveryTag)
+		a.GetLogger(gocli.LogLevelDebug).Errorf("failed delivery of delivery tag: %d", confirmed.DeliveryTag)
 	}
 }

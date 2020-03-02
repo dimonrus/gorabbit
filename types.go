@@ -6,7 +6,7 @@ import (
 )
 
 // Consumer registry
-type Registry map[string]RegistryItem
+type Registry map[string]*Consumer
 
 // Servers
 type Servers map[string]RabbitServer
@@ -20,28 +20,47 @@ type Config struct {
 	Queues  Queues
 }
 
-// Consumer registry item
-type RegistryItem struct {
-	Queue    string
-	Server   string
-	Callback func(d amqp.Delivery)
-	Count    byte
+// Internal subscriber struct
+type subscriber struct {
+	// Subscriber name
+	name string
+	// chan for stop subscribing
+	stop chan bool
 }
 
 // Consumer entity
 type Consumer struct {
+	// Queue name
+	Queue      string
+	// Server name
+	Server     string
+	// Delivery process callback
+	Callback   func(d amqp.Delivery)
+	// Subscribers count
+	Count      uint8
+	// Stop all consumers
+	stop       chan bool
+	// Subscribers
+	subscribers []*subscriber
+	// amqp Connection
 	connection *amqp.Connection
+	// amqp Channel
 	channel    *amqp.Channel
+	// amqp Queue
 	queue      *amqp.Queue
-	process    func(d amqp.Delivery)
 }
 
 // Server configuration
 type RabbitServer struct {
+	// rabbit mq virtual host
 	Vhost    string
+	// rabbit mq host
 	Host     string
+	// rabbit mq port
 	Port     int
+	// rabbit mq user
 	User     string
+	// rabbit mq password
 	Password string
 }
 
@@ -63,6 +82,7 @@ type RabbitQueue struct {
 
 // Rabbit Application
 type Application struct {
-	config Config
-	base   gocli.Application
+	config   Config
+	registry Registry
+	gocli.Application
 }

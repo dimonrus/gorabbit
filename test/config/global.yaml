@@ -1,0 +1,38 @@
+depends:
+project:
+  name: consumer
+  debug: true
+rabbit:
+  queues:
+    golkp.test:
+      exchange: amq.direct
+      type: direct
+      routingKey:
+        - golkp-test-message
+      durable: true
+    golkp.report:
+      exchange: amq.direct
+      type: direct
+      routingKey:
+        - golkp-report
+      durable: true
+  servers:
+    local:
+      host: rabbitmq.hypergraph-dev.svc.dev.cluster.local.
+      vhost: golkp_dev
+      port: 5672
+      user: golkp
+      password: miiCh7ju
+arguments:
+  app:
+    type: string
+    label: application type
+  name:
+    type: string
+    label: name of script
+  file:
+    type: string
+    label: name of file
+  class:
+    type: string
+    label: type of entity
