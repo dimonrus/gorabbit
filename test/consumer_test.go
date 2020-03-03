@@ -36,7 +36,7 @@ func TestApplication_Consume(t *testing.T) {
 	app := gocli.NewApplication("global", rootPath+"/config", &cfg)
 	app.ParseFlags(&cfg.Arguments)
 
-	a := gorabbit.NewApplication(cfg.Rabbit, registry, app)
+	a := gorabbit.NewApplication(cfg.Rabbit, app).SetRegistry(registry)
 
 	a.GetLogger(gocli.LogLevelDebug).Info("Starting AMQP Application...")
 	go func() {

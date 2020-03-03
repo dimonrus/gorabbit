@@ -36,12 +36,17 @@ func (srv *RabbitServer) String() string {
 }
 
 // New rabbit Application
-func NewApplication(config Config, registry Registry, app gocli.Application) *Application {
+func NewApplication(config Config, app gocli.Application) *Application {
 	return &Application{
 		config:      config,
-		registry:    registry,
 		Application: app,
 	}
+}
+
+// Set Registry
+func (a *Application) SetRegistry(r Registry) *Application{
+	a.registry = r
+	return a
 }
 
 // Get Config
