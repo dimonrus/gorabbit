@@ -6,6 +6,7 @@ import (
 	"github.com/dimonrus/gohelp"
 	"github.com/dimonrus/porterr"
 	"github.com/streadway/amqp"
+	"time"
 )
 
 // Get server
@@ -207,6 +208,7 @@ func (a *Application) ConsumerCommander(command gocli.Command) {
 					e := a.Consume(n)
 					if e != nil {
 						a.FailMessage(e.Error(), command)
+						time.Sleep(time.Second)
 						a.ConsumerCommander(command)
 					}
 				}(name)
@@ -222,6 +224,7 @@ func (a *Application) ConsumerCommander(command gocli.Command) {
 							e := a.Consume(n)
 							if e != nil {
 								a.FailMessage(e.Error(), command)
+								time.Sleep(time.Second)
 								a.ConsumerCommander(command)
 							}
 						}(name)
@@ -263,6 +266,7 @@ func (a *Application) ConsumerCommander(command gocli.Command) {
 					e := a.Consume(n)
 					if e != nil {
 						a.FailMessage(e.Error(), command)
+						time.Sleep(time.Second)
 						a.ConsumerCommander(command)
 					}
 				}(name)
@@ -278,6 +282,7 @@ func (a *Application) ConsumerCommander(command gocli.Command) {
 							e := a.Consume(n)
 							if e != nil {
 								a.FailMessage(e.Error(), command)
+								time.Sleep(time.Second)
 								a.ConsumerCommander(command)
 							}
 						}(name)
