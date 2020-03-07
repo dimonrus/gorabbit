@@ -89,8 +89,8 @@ func (a *Application) FailMessage(message string, command gocli.Command) {
 }
 
 // Get Registry
-func (a *Application) GetRegistry() *Registry {
-	return &a.registry
+func (a *Application) GetRegistry() Registry {
+	return a.registry
 }
 
 // Create new consumer
@@ -197,9 +197,9 @@ func (a *Application) ConsumerCommander(command gocli.Command) {
 	}
 	switch action {
 	case CommandStart:
-		for name := range *a.GetRegistry() {
+		for name := range a.GetRegistry() {
 			if args[0].GetString() == CommandKeyWordAll {
-				if (*a.GetRegistry())[name].HasSubscribers() {
+				if a.GetRegistry()[name].HasSubscribers() {
 					a.AttentionMessage(fmt.Sprintf("Subscribers for '%s' already started", name), command)
 					continue
 				}
@@ -215,7 +215,7 @@ func (a *Application) ConsumerCommander(command gocli.Command) {
 			} else {
 				for _, v := range args {
 					if v.GetString() == name {
-						if (*a.GetRegistry())[name].HasSubscribers() {
+						if a.GetRegistry()[name].HasSubscribers() {
 							a.AttentionMessage(fmt.Sprintf("Subscribers for '%s' already started", name), command)
 							continue
 						}
@@ -233,33 +233,33 @@ func (a *Application) ConsumerCommander(command gocli.Command) {
 			}
 		}
 	case CommandStop:
-		for name := range *a.GetRegistry() {
+		for name := range a.GetRegistry() {
 			if args[0].GetString() == CommandKeyWordAll {
-				if !(*a.GetRegistry())[name].HasSubscribers() {
+				if !a.GetRegistry()[name].HasSubscribers() {
 					a.AttentionMessage(fmt.Sprintf("Subscribers for '%s' already stopped", name), command)
 					continue
 				}
 				a.AttentionMessage(fmt.Sprintf("Stopping subscribers for '%s'", name), command)
-				(*a.GetRegistry())[name].Stop()
+				a.GetRegistry()[name].Stop()
 			} else {
 				for _, v := range args {
 					if v.GetString() == name {
-						if !(*a.GetRegistry())[name].HasSubscribers() {
+						if !a.GetRegistry()[name].HasSubscribers() {
 							a.AttentionMessage(fmt.Sprintf("Subscribers for '%s' already stopped", name), command)
 							continue
 						}
 						a.AttentionMessage(fmt.Sprintf("Stopping subscribers for '%s'", name), command)
-						(*a.GetRegistry())[name].Stop()
+						a.GetRegistry()[name].Stop()
 					}
 				}
 			}
 		}
 	case CommandRestart:
-		for name := range *a.GetRegistry() {
+		for name := range a.GetRegistry() {
 			if args[0].GetString() == CommandKeyWordAll {
-				if (*a.GetRegistry())[name].HasSubscribers() {
+				if a.GetRegistry()[name].HasSubscribers() {
 					a.AttentionMessage(fmt.Sprintf("Stopping subscribers for '%s'", name), command)
-					(*a.GetRegistry())[name].Stop()
+					a.GetRegistry()[name].Stop()
 				}
 				a.SuccessMessage(fmt.Sprintf("Starting subscribe for '%s' consumer", name), command)
 				go func(n string) {
@@ -273,9 +273,9 @@ func (a *Application) ConsumerCommander(command gocli.Command) {
 			} else {
 				for _, v := range args {
 					if v.GetString() == name {
-						if (*a.GetRegistry())[name].HasSubscribers() {
+						if a.GetRegistry()[name].HasSubscribers() {
 							a.AttentionMessage(fmt.Sprintf("Stopping subscribers for '%s'", name), command)
-							(*a.GetRegistry())[name].Stop()
+							a.GetRegistry()[name].Stop()
 						}
 						a.SuccessMessage(fmt.Sprintf("Starting subscribe for '%s' consumer", name), command)
 						go func(n string) {
@@ -291,13 +291,13 @@ func (a *Application) ConsumerCommander(command gocli.Command) {
 			}
 		}
 	case CommandStatus:
-		for name := range *a.GetRegistry() {
+		for name := range a.GetRegistry() {
 			if args[0].GetString() == CommandKeyWordAll {
-				a.SuccessMessage(fmt.Sprintf("Consumer '%s' have a %v subscribers", name, (*a.GetRegistry())[name].SubscribersCount()), command)
+				a.SuccessMessage(fmt.Sprintf("Consumer '%s' have a %v subscribers", name, a.GetRegistry()[name].SubscribersCount()), command)
 			} else {
 				for _, v := range args {
 					if v.GetString() == name {
-						a.SuccessMessage(fmt.Sprintf("Consumer '%s' have a %v subscribers", name, (*a.GetRegistry())[name].SubscribersCount()), command)
+						a.SuccessMessage(fmt.Sprintf("Consumer '%s' have a %v subscribers", name, a.GetRegistry()[name].SubscribersCount()), command)
 					}
 				}
 			}
@@ -305,11 +305,11 @@ func (a *Application) ConsumerCommander(command gocli.Command) {
 	case CommandSet:
 		if args[0].GetString() == CommandKeyWordCount {
 			count := args[1].GetInt()
-			for name := range *a.GetRegistry() {
+			for name := range a.GetRegistry() {
 				for _, v := range args[2:] {
 					if v.GetString() == name {
 						a.SuccessMessage(fmt.Sprintf("Consumer '%s' set subscribers count to: %v ", name, count), command)
-						(*a.GetRegistry())[name].Count = uint8(count)
+						a.GetRegistry()[name].Count = uint8(count)
 					}
 				}
 			}
