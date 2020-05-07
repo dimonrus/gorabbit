@@ -78,7 +78,7 @@ func (c *Consumer) Subscribe(logger gocli.Logger) porterr.IError  {
 							}
 						}()
 						c.Callback(d)
-						err := d.Ack(true)
+						err := d.Ack(false)
 						if err != nil {
 							logger.Errorf("Ack message error: %s\n", err.Error())
 							return
