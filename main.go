@@ -3,7 +3,6 @@ package gorabbit
 import (
 	"fmt"
 	"github.com/dimonrus/gocli"
-	"github.com/dimonrus/gohelp"
 	"github.com/dimonrus/porterr"
 	"github.com/streadway/amqp"
 	"time"
@@ -55,39 +54,6 @@ func (a *Application) GetConfig() *Config {
 	return &a.config
 }
 
-// Success message
-func (a *Application) SuccessMessage(message string, command gocli.Command) {
-	message = gohelp.AnsiGreen + message + gohelp.AnsiReset
-	a.GetLogger(gocli.LogLevelInfo).Infoln(message)
-	e := command.Result([]byte(message + "\n"))
-	if e != nil {
-		a.GetLogger(gocli.LogLevelWarn).Errorln(e)
-	}
-	return
-}
-
-// Success message
-func (a *Application) AttentionMessage(message string, command gocli.Command) {
-	message = gohelp.AnsiCyan + message + gohelp.AnsiReset
-	a.GetLogger(gocli.LogLevelWarn).Warnln(message)
-	e := command.Result([]byte(message + "\n"))
-	if e != nil {
-		a.GetLogger(gocli.LogLevelWarn).Errorln(e)
-	}
-	return
-}
-
-// Success message
-func (a *Application) FailMessage(message string, command gocli.Command) {
-	message = gohelp.AnsiRed + message + gohelp.AnsiReset
-	a.GetLogger(gocli.LogLevelErr).Errorln(message)
-	e := command.Result([]byte(message + "\n"))
-	if e != nil {
-		a.GetLogger(gocli.LogLevelWarn).Errorln(e)
-	}
-	return
-}
-
 // Get Registry
 func (a *Application) GetRegistry() Registry {
 	return a.registry
@@ -132,12 +98,12 @@ func (a *Application) Consume(name string) porterr.IError {
 		// Close channel
 		err := consumer.channel.Close()
 		if err != nil {
-			a.FailMessage("Channel close error: "+err.Error(), gocli.Command{})
+			a.FailMessage("Channel close error: "+err.Error())
 		}
 		// Close connection
 		err = consumer.connection.Close()
 		if err != nil {
-			a.FailMessage("Connection close error: "+err.Error(), gocli.Command{})
+			a.FailMessage("Connection close error: "+err.Error())
 		}
 	}()
 	// Init exchange
@@ -169,7 +135,7 @@ func (a *Application) Consume(name string) porterr.IError {
 		select {
 		case ae := <-ce:
 			if ae != nil {
-				a.FailMessage("Channel closed: "+ae.Error(), gocli.Command{})
+				a.FailMessage("Channel closed: "+ae.Error())
 				// Exit from child goroutine
 				e = porterr.New(porterr.PortErrorSystem, ae.Error())
 				consumer.Stop()
@@ -180,16 +146,16 @@ func (a *Application) Consume(name string) porterr.IError {
 	if e != nil {
 		return e
 	}
-	a.SuccessMessage(fmt.Sprintf("Subscribers for '%s' are started", name), gocli.Command{})
+	a.SuccessMessage(fmt.Sprintf("Subscribers for '%s' are started", name))
 	// Wait until consumer stop
 	<-consumer.stop
-	a.SuccessMessage("Close consuming for queue: "+consumer.Queue, gocli.Command{})
+	a.SuccessMessage("Close consuming for queue: "+consumer.Queue)
 	return e
 }
 
 // Consumer command processor
-func (a *Application) ConsumerCommander(command gocli.Command) {
-	a.SuccessMessage("Receive command: "+command.String(), gocli.Command{})
+func (a *Application) ConsumerCommander(command *gocli.Command) {
+	a.SuccessMessage("Receive command: "+command.String())
 	action, args, e := ParseCommand(command)
 	if e != nil {
 		a.FatalError(e)

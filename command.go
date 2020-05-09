@@ -18,7 +18,7 @@ const (
 )
 
 // Parse gocli.Command
-func ParseCommand(command gocli.Command) (action string, arguments []gocli.Argument, e porterr.IError)  {
+func ParseCommand(command *gocli.Command) (action string, arguments []gocli.Argument, e porterr.IError)  {
 	args := command.Arguments()
 	if len(args) > 0 {
 		if args[0].Name != CommandConsumer {

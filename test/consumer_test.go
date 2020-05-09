@@ -19,8 +19,8 @@ type rConfig struct {
 
 var cfg rConfig
 var registry = map[string]*gorabbit.Consumer{
-	"test": {Queue: "golkp.test", Server: "local", Callback: tTestConsume, Count: 2},
-	"report": {Queue: "golkp.report", Server: "local", Callback: tTestConsume, Count: 4},
+	"test": {Queue: "golkp.test", Server: "local", Callback: tTestConsume, Count: 3},
+	"report": {Queue: "golkp.report", Server: "local", Callback: tTestConsume, Count: 0},
 }
 
 func tTestConsume(d amqp.Delivery) {
@@ -38,7 +38,7 @@ func TestApplication_Consume(t *testing.T) {
 
 	a := gorabbit.NewApplication(cfg.Rabbit, app).SetRegistry(registry)
 
-	a.GetLogger(gocli.LogLevelDebug).Info("Starting AMQP Application...")
+	a.AttentionMessage("Starting AMQP Application...")
 	go func() {
 		e := a.Start("3333", a.ConsumerCommander)
 		if e != nil {
@@ -52,20 +52,22 @@ func TestApplication_Consume(t *testing.T) {
 	}()
 	time.Sleep(time.Second * 1)
 	go func() {
-		return
 		pub := amqp.Publishing{
 			Body: []byte("Hello my friend"),
 		}
-		go a.Publish(pub, "golkp.test", "local")
-		go a.Publish(pub, "golkp.test", "local")
-		go a.Publish(pub, "golkp.test", "local")
-		go a.Publish(pub, "golkp.test", "local")
-		go a.Publish(pub, "golkp.test", "local")
-		go a.Publish(pub, "golkp.test", "local")
-		go a.Publish(pub, "golkp.test", "local")
-		go a.Publish(pub, "golkp.test", "local")
-		go a.Publish(pub, "golkp.test", "local")
-		go a.Publish(pub, "golkp.test", "local")
+		for j := 0; j< 100; j++ {
+			go a.Publish(pub, "golkp.test", "local")
+			go a.Publish(pub, "golkp.test", "local")
+			go a.Publish(pub, "golkp.test", "local")
+			go a.Publish(pub, "golkp.test", "local")
+			go a.Publish(pub, "golkp.test", "local")
+			go a.Publish(pub, "golkp.test", "local")
+			go a.Publish(pub, "golkp.test", "local")
+			go a.Publish(pub, "golkp.test", "local")
+			go a.Publish(pub, "golkp.test", "local")
+			go a.Publish(pub, "golkp.test", "local")
+			time.Sleep(time.Millisecond * 20)
+		}
 	}()
 
 	// Wait for OS signal
