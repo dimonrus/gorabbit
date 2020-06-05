@@ -175,7 +175,8 @@ func (a *Application) ConsumerCommander(command *gocli.Command) {
 					if e != nil {
 						a.FailMessage(e.Error(), command)
 						time.Sleep(time.Second)
-						a.ConsumerCommander(command)
+						// Run each consumer if fail all start
+						a.ConsumerCommander(gocli.ParseCommand([]byte(CommandConsumer + " " + CommandStart + " " + n)))
 					}
 				}(name)
 			} else {
