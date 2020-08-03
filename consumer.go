@@ -5,9 +5,40 @@ import (
 	"github.com/dimonrus/gocli"
 	"github.com/dimonrus/gohelp"
 	"github.com/dimonrus/porterr"
+	"github.com/streadway/amqp"
 	"runtime/debug"
 	"time"
 )
+
+// Consumer entity
+type Consumer struct {
+	// Queue name
+	Queue      string
+	// Server name
+	Server     string
+	// Delivery process callback
+	Callback   func(d amqp.Delivery)
+	// Subscribers count
+	Count      uint8
+	// Stop all consumers
+	stop       chan bool
+	// Subscribers
+	subscribers []*subscriber
+	// amqp Connection
+	connection *amqp.Connection
+	// amqp Channel
+	channel    *amqp.Channel
+	// amqp Queue
+	queue      *amqp.Queue
+}
+
+// Internal subscriber struct
+type subscriber struct {
+	// Subscriber name
+	name string
+	// chan for stop subscribing
+	stop chan bool
+}
 
 // Stop all subscribers
 func (c *Consumer) Stop() {

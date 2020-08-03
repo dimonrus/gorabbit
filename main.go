@@ -8,31 +8,16 @@ import (
 	"time"
 )
 
-// Get server
-func (c *Config) GetServer(name string) (*RabbitServer, porterr.IError) {
-	server, ok := c.Servers[name]
-	if !ok {
-		return nil, porterr.NewF(porterr.PortErrorSystem, "server %s not found in rabbit config", name)
-	}
-	if server.Vhost == "" {
-		return nil, porterr.NewF(porterr.PortErrorSystem, "vhost is incorrect for server %s in rabbit config", name)
-	}
-	return &server, nil
-}
-
-// Get queue
-func (c *Config) GetQueue(name string) (*RabbitQueue, porterr.IError) {
-	queue, ok := c.Queues[name]
-	if !ok {
-		return nil, porterr.NewF(porterr.PortErrorSystem, "queue %s not found in rabbit config", name)
-	}
-	queue.Name = name
-	return &queue, nil
-}
-
-// Get connection string
-func (srv *RabbitServer) String() string {
-	return fmt.Sprintf("amqp://%s:%s@%s:%v/%s", srv.User, srv.Password, srv.Host, srv.Port, srv.Vhost)
+// Rabbit Application
+type Application struct {
+	// Application configuration
+	config Config
+	// Consumer registry
+	registry Registry
+	// Publish connection pool
+	sp *ServerPool
+	// Basic application
+	gocli.Application
 }
 
 // New rabbit Application
@@ -40,11 +25,12 @@ func NewApplication(config Config, app gocli.Application) *Application {
 	return &Application{
 		config:      config,
 		Application: app,
+		sp:          NewServerPool(app.GetLogger(gocli.LogLevelDebug)),
 	}
 }
 
 // Set Registry
-func (a *Application) SetRegistry(r Registry) *Application{
+func (a *Application) SetRegistry(r Registry) *Application {
 	a.registry = r
 	return a
 }
@@ -66,7 +52,7 @@ func (a *Application) Consume(name string) porterr.IError {
 		return porterr.NewF(porterr.PortErrorParam, "Consumer '%s' not found in registry")
 	}
 	// Get server
-	srv, e := a.config.GetServer(consumer.Server)
+	srv, e := a.GetConfig().GetServer(consumer.Server)
 	if e != nil {
 		return e
 	}
@@ -98,12 +84,12 @@ func (a *Application) Consume(name string) porterr.IError {
 		// Close channel
 		err := consumer.channel.Close()
 		if err != nil {
-			a.FailMessage("Channel close error: "+err.Error())
+			a.FailMessage("Channel close error: " + err.Error())
 		}
 		// Close connection
 		err = consumer.connection.Close()
 		if err != nil {
-			a.FailMessage("Connection close error: "+err.Error())
+			a.FailMessage("Connection close error: " + err.Error())
 		}
 	}()
 	// Init exchange
@@ -135,7 +121,7 @@ func (a *Application) Consume(name string) porterr.IError {
 		select {
 		case ae := <-ce:
 			if ae != nil {
-				a.FailMessage("Channel closed: "+ae.Error())
+				a.FailMessage("Channel closed: " + ae.Error())
 				// Exit from child goroutine
 				e = porterr.New(porterr.PortErrorSystem, ae.Error())
 				consumer.Stop()
@@ -149,13 +135,13 @@ func (a *Application) Consume(name string) porterr.IError {
 	a.SuccessMessage(fmt.Sprintf("Subscribers for '%s' are started", name))
 	// Wait until consumer stop
 	<-consumer.stop
-	a.SuccessMessage("Close consuming for queue: "+consumer.Queue)
+	a.SuccessMessage("Close consuming for queue: " + consumer.Queue)
 	return e
 }
 
 // Consumer command processor
 func (a *Application) ConsumerCommander(command *gocli.Command) {
-	a.SuccessMessage("Receive command: "+command.String())
+	a.SuccessMessage("Receive command: " + command.String())
 	action, args, e := ParseCommand(command)
 	if e != nil {
 		a.FatalError(e)

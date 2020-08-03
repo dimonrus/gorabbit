@@ -18,7 +18,7 @@ rabbit:
       durable: true
   servers:
     local:
-      host: 10.10.1.140
+      host: 10.10.1.11
       vhost: golkp_dev
       port: 5672
       user: golkp

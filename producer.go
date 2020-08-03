@@ -7,73 +7,37 @@ import (
 )
 
 // Publisher
-func (a *Application) Publish(publishing amqp.Publishing, queue string, server string) porterr.IError {
+// publishing - AMQP Message
+// queue - name of the queue defined in config
+// server - name of the server defined in config
+// route - routing keys
+func (a *Application) Publish(p amqp.Publishing, queue string, server string, route ...string) porterr.IError {
 	// Get server config
-	srv, e := a.config.GetServer(server)
+	srv, e := a.GetConfig().GetServer(server)
 	if e != nil {
 		return e
 	}
+	// Set default setting if not set in config
+	srv.init()
 	// Get queue config
-	que, e := a.config.GetQueue(queue)
+	q, e := a.GetConfig().GetQueue(queue)
 	if e != nil {
 		return e
 	}
-	// get connection string
-	connection, err := amqp.Dial(srv.String())
-	if err != nil {
-		return porterr.NewF(porterr.PortErrorProducer, "Can't dial to RabbitMq server (%s): %s", srv.String(), err.Error())
+	// Define routing keys
+	if len(route) == 0 {
+		route = q.RoutingKey
 	}
-	defer func() {
-		err := connection.Close()
-		if err != nil {
-			a.GetLogger(gocli.LogLevelErr).Errorln(err)
-		}
-	}()
-	// get channel
-	channel, err := connection.Channel()
-	if err != nil {
-		return porterr.NewF(porterr.PortErrorProducer, "Can't get channel from server (%s): %s", server, err.Error())
+	if len(route) == 0 {
+		route = append(route, "")
 	}
-	// Set confirm mode
-	if err := channel.Confirm(false); err != nil {
-		return porterr.NewF(porterr.PortErrorProducer, "Confirm mode set failed: %s ", err.Error())
-	}
-	// Publish notification
-	confirms := channel.NotifyPublish(make(chan amqp.Confirmation, 1))
-	defer a.confirmOne(confirms)
-	// Publish to all routing keys
-	if len(que.RoutingKey) > 0 {
-		for _, value := range que.RoutingKey {
-			if e = a.publish(channel, que.Exchange, value, false, false, publishing); e != nil {
-				return e
-			}
-		}
+	cp := a.sp.GetConnectionPoolOrCreate(server)
+	// Publish message
+	e = cp.Publish(p, *srv, *q,  route...)
+	if e == nil {
+		a.GetLogger(gocli.LogLevelDebug).Infoln("SUCCESS PUBLISH: ", string(p.Body))
 	} else {
-		if e = a.publish(channel, que.Exchange, "", false, false, publishing); e != nil {
-			return e
-		}
-	}
-
-	return nil
-}
-
-// Publish message
-func (a *Application) publish(channel *amqp.Channel, exchange, key string, mandatory, immediate bool, publishing amqp.Publishing) porterr.IError {
-	var e porterr.IError
-	a.GetLogger(gocli.LogLevelDebug).Infoln("PUBLISH: ", string(publishing.Body))
-	err := channel.Publish(exchange, key, mandatory, immediate, publishing)
-	if err != nil {
-		e = porterr.NewF(porterr.PortErrorProducer, "exchange publish: %s", err.Error())
-		a.GetLogger(gocli.LogLevelErr).Errorf("exchange publish: %s", err)
+		a.GetLogger(gocli.LogLevelDebug).Errorln("PUBLISH ERROR: ", e.Error())
 	}
 	return e
-}
-
-// Check confirm
-func (a *Application) confirmOne(confirms <-chan amqp.Confirmation) {
-	if confirmed := <-confirms; confirmed.Ack {
-		a.GetLogger(gocli.LogLevelDebug).Infof("confirmed delivery with delivery tag: %d", confirmed.DeliveryTag)
-	} else {
-		a.GetLogger(gocli.LogLevelDebug).Errorf("failed delivery of delivery tag: %d", confirmed.DeliveryTag)
-	}
 }
