@@ -73,7 +73,7 @@ func TestApplication_Publish(t *testing.T) {
 	pub := amqp.Publishing{
 		Body: []byte("Hello my friend"),
 	}
-	for j := 0; j< 10000; j++ {
+	for j := 0; j< 100000; j++ {
 		pub.Body = []byte("hello 1:"+strconv.Itoa(j))
 		go app.Publish(pub, "golkp.test", "local")
 		pub.Body = []byte("hello 2:"+strconv.Itoa(j))
@@ -94,7 +94,7 @@ func TestApplication_Publish(t *testing.T) {
 		go app.Publish(pub, "golkp.test", "local")
 		pub.Body = []byte("hello 10:"+strconv.Itoa(j))
 		go app.Publish(pub, "golkp.test", "local")
-		time.Sleep(time.Millisecond * 5)
+		time.Sleep(time.Millisecond * 1)
 	}
 	c := make(chan int)
 	<-c

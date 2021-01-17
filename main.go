@@ -261,8 +261,19 @@ func (a *Application) ConsumerCommander(command *gocli.Command) {
 			for name := range a.GetRegistry() {
 				for _, v := range args[2:] {
 					if v.GetString() == name {
+						if a.GetRegistry()[name].HasSubscribers() {
+							a.GetRegistry()[name].Stop()
+						}
 						a.SuccessMessage(fmt.Sprintf("Consumer '%s' set subscribers count to: %v ", name, count), command)
 						a.GetRegistry()[name].Count = uint8(count)
+						go func(n string) {
+							e := a.Consume(n)
+							if e != nil {
+								a.FailMessage(e.Error(), command)
+								time.Sleep(time.Second)
+								a.ConsumerCommander(command)
+							}
+						}(name)
 					}
 				}
 			}
