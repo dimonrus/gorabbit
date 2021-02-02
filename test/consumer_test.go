@@ -48,7 +48,7 @@ func testInitApp() *gorabbit.Application {
 func TestApplication_Consume(t *testing.T) {
 	a := testInitApp()
 	go func() {
-		e := a.Start("3333", a.ConsumerCommander)
+		e := a.Start(":3333", a.ConsumerCommander)
 		if e != nil {
 			a.GetLogger(gocli.LogLevelErr).Error(e)
 		}

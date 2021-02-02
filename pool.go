@@ -168,11 +168,21 @@ func (cp *ConnectionPool) dial(s RabbitServer) (e porterr.IError) {
 	return
 }
 
+// Count how many connections must be removed from pool
+func (cp *ConnectionPool) getRemovedCount() (count int) {
+	for _, c := range cp.pool {
+		if c.remove {
+			count++
+		}
+	}
+	return
+}
+
 // Get current connection using round robin algorithm
 func (cp *ConnectionPool) GetConnection(s RabbitServer) (c *connection, e porterr.IError) {
 	cp.m.Lock()
 	defer cp.m.Unlock()
-	if len(cp.pool) == 0 {
+	if len(cp.pool) == 0 || len(cp.pool) == cp.getRemovedCount() {
 		// dial first connection
 		e = cp.dial(s)
 		if e != nil {
