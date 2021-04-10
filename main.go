@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// Rabbit Application
+// Application Rabbit application struct
 type Application struct {
 	// Application configuration
 	config Config
@@ -20,32 +20,32 @@ type Application struct {
 	gocli.Application
 }
 
-// New rabbit Application
+// NewApplication New rabbit application
 func NewApplication(config Config, app gocli.Application) *Application {
 	return &Application{
 		config:      config,
 		Application: app,
-		sp:          NewServerPool(app.GetLogger(gocli.LogLevelDebug)),
+		sp:          NewServerPool(app.GetLogger()),
 	}
 }
 
-// Set Registry
+// SetRegistry Set registry of subscribers
 func (a *Application) SetRegistry(r Registry) *Application {
 	a.registry = r
 	return a
 }
 
-// Get Config
+// GetConfig Get app config
 func (a *Application) GetConfig() *Config {
 	return &a.config
 }
 
-// Get Registry
+// GetRegistry Get registry of subscribers
 func (a *Application) GetRegistry() Registry {
 	return a.registry
 }
 
-// Create new consumer
+// Consume Create new consumer
 func (a *Application) Consume(name string) porterr.IError {
 	consumer, ok := a.registry[name]
 	if !ok {
@@ -128,7 +128,7 @@ func (a *Application) Consume(name string) porterr.IError {
 			}
 		}
 	}()
-	e = consumer.Subscribe(a.GetLogger(gocli.LogLevelDebug))
+	e = consumer.Subscribe(a.GetLogger())
 	if e != nil {
 		return e
 	}
@@ -139,7 +139,7 @@ func (a *Application) Consume(name string) porterr.IError {
 	return e
 }
 
-// Consumer command processor
+// ConsumerCommander Consumer command processor
 func (a *Application) ConsumerCommander(command *gocli.Command) {
 	a.SuccessMessage("Receive command: " + command.String())
 	action, args, e := ParseCommand(command)

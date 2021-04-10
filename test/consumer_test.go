@@ -50,7 +50,7 @@ func TestApplication_Consume(t *testing.T) {
 	go func() {
 		e := a.Start(":3333", a.ConsumerCommander)
 		if e != nil {
-			a.GetLogger(gocli.LogLevelErr).Error(e)
+			a.GetLogger().Error(e)
 		}
 	}()
 
@@ -60,11 +60,11 @@ func TestApplication_Consume(t *testing.T) {
 	// Wait for OS signal
 	forever := make(chan os.Signal, 1)
 
-	a.GetLogger(gocli.LogLevelDebug).Info(" [*] Waiting for messages. To exit press CTRL+C")
+	a.GetLogger().Info(" [*] Waiting for messages. To exit press CTRL+C")
 	signal.Notify(forever, os.Interrupt)
 	<-forever
 
-	a.GetLogger(gocli.LogLevelDebug).Info(" [*] All Consumers is shutting down")
+	a.GetLogger().Info(" [*] All Consumers is shutting down")
 	os.Exit(0)
 }
 
@@ -73,7 +73,7 @@ func TestApplication_Publish(t *testing.T) {
 	pub := amqp.Publishing{
 		Body: []byte("Hello my friend"),
 	}
-	for j := 0; j< 100000; j++ {
+	for j := 0; j< 10000; j++ {
 		pub.Body = []byte("hello 1:"+strconv.Itoa(j))
 		go app.Publish(pub, "golkp.test", "local")
 		pub.Body = []byte("hello 2:"+strconv.Itoa(j))

@@ -1,12 +1,11 @@
 package gorabbit
 
 import (
-	"github.com/dimonrus/gocli"
 	"github.com/dimonrus/porterr"
 	"github.com/streadway/amqp"
 )
 
-// Publisher
+// Publish Publisher
 // publishing - AMQP Message
 // queue - name of the queue defined in config
 // server - name of the server defined in config
@@ -35,9 +34,9 @@ func (a *Application) Publish(p amqp.Publishing, queue string, server string, ro
 	// Publish message
 	e = cp.Publish(p, *srv, *q,  route...)
 	if e == nil {
-		a.GetLogger(gocli.LogLevelDebug).Infoln("SUCCESS PUBLISH: ", string(p.Body))
+		a.GetLogger().Infoln("SUCCESS PUBLISH: ", string(p.Body))
 	} else {
-		a.GetLogger(gocli.LogLevelDebug).Errorln("PUBLISH ERROR: ", e.Error())
+		a.GetLogger().Errorln("PUBLISH ERROR: ", e.Error())
 	}
 	return e
 }
