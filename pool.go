@@ -58,7 +58,7 @@ type ConnectionPool struct {
 	// flag shows that idle function in process
 	fIdle bool
 	// exit
-	exit chan bool
+	exit chan struct{}
 	// request per second
 	rps int
 }

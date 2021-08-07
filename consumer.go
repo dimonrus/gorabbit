@@ -13,23 +13,23 @@ import (
 // Consumer entity
 type Consumer struct {
 	// Queue name
-	Queue      string
+	Queue string
 	// Server name
-	Server     string
+	Server string
 	// Delivery process callback
-	Callback   func(d amqp.Delivery)
+	Callback func(d amqp.Delivery)
 	// Subscribers count
-	Count      uint8
+	Count uint8
 	// Stop all consumers
-	stop       chan bool
+	stop chan struct{}
 	// Subscribers
 	subscribers []*subscriber
 	// amqp Connection
 	connection *amqp.Connection
 	// amqp Channel
-	channel    *amqp.Channel
+	channel *amqp.Channel
 	// amqp Queue
-	queue      *amqp.Queue
+	queue *amqp.Queue
 }
 
 // Internal subscriber struct
@@ -37,16 +37,16 @@ type subscriber struct {
 	// Subscriber name
 	name string
 	// chan for stop subscribing
-	stop chan bool
+	stop chan struct{}
 }
 
 // Stop all subscribers
 func (c *Consumer) Stop() {
 	for i := range c.subscribers {
-		c.subscribers[i].stop <- true
+		c.subscribers[i].stop <- struct{}{}
 	}
 	c.subscribers = make([]*subscriber, 0)
-	c.stop <- true
+	c.stop <- struct{}{}
 }
 
 // Check for subscribers
@@ -66,12 +66,12 @@ func (c *Consumer) SubscribersCount() uint8 {
 func (c *Consumer) NewSubscriber(name string) *subscriber {
 	return &subscriber{
 		name: name,
-		stop: make(chan bool),
+		stop: make(chan struct{}),
 	}
 }
 
 // Subscribe for queue
-func (c *Consumer) Subscribe(logger gocli.Logger) porterr.IError  {
+func (c *Consumer) Subscribe(logger gocli.Logger) porterr.IError {
 	for num := uint8(0); num < c.Count; num++ {
 		logger.Infof(`Subscribe '%s' queue on server '%s'`, c.Queue, c.Server)
 		// If consumer not created

@@ -65,7 +65,7 @@ func (a *Application) Consume(name string) porterr.IError {
 		e = porterr.New(porterr.PortErrorParam, "exchange is not defined")
 		return e
 	}
-	consumer.stop = make(chan bool)
+	consumer.stop = make(chan struct{})
 	var err error
 	// Dial to server
 	consumer.connection, err = amqp.Dial(srv.String())
