@@ -1,9 +1,9 @@
-github.com/dimonrus/gocli v0.9.2 h1:N7MDY5mSlFQHtfEuQZ7LEkFADmZ43JBMtkuVCJ28+Fs=
-github.com/dimonrus/gocli v0.9.2/go.mod h1:El+etFG0+LEdJzIMGkcYGSojmh+vTqRAtQbusHjNQaA=
+github.com/dimonrus/gocli v0.9.3 h1:6YhFfJP/YGO+tQz40yq4Xf36NoM+yoU88ilAsKbJN14=
+github.com/dimonrus/gocli v0.9.3/go.mod h1:YNDO6a3ZXwhJm1ksnWpVhzwaMNSeXc5CjGvOMJPu3Hk=
 github.com/dimonrus/gohelp v0.4.0 h1:4EPgmMGuGfddFP0YK/D67B1RH362aHBOHCmj7r1PTSU=
 github.com/dimonrus/gohelp v0.4.0/go.mod h1:+dOOHmnzKauApxlx1kn/sHAYds3gPvMvXLpeLtBq82E=
-github.com/dimonrus/porterr v1.10.0 h1:NpxjsrdSiNNASoGVuQ2fZCyg/0Z6Et1cvoyCmdrILuA=
-github.com/dimonrus/porterr v1.10.0/go.mod h1:BCVpaUyYdawPPzeAa8yjCYvemctND1I9ER/nFnOyDgQ=
+github.com/dimonrus/porterr v1.10.1 h1:d47TbN8srmxx2TzTuJ0XVGnX9w+cCGATB9YJEKuciYA=
+github.com/dimonrus/porterr v1.10.1/go.mod h1:BCVpaUyYdawPPzeAa8yjCYvemctND1I9ER/nFnOyDgQ=
 github.com/streadway/amqp v1.0.0 h1:kuuDrUJFZL1QYL9hUNuCxNObNzB0bV/ZG5jV3RWAQgo=
 github.com/streadway/amqp v1.0.0/go.mod h1:AZpEONHx3DKn8O/DFsRAY58/XVQiIPMTMB1SddzLXVw=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
