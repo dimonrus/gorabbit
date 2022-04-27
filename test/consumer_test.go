@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/dimonrus/gocli"
 	"github.com/dimonrus/gorabbit"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -20,7 +20,7 @@ type rConfig struct {
 
 var cfg rConfig
 var registry = map[string]*gorabbit.Consumer{
-	"test": {Queue: "golkp.test", Server: "local", Callback: tTestConsume, Count: 5},
+	"test":   {Queue: "golkp.test", Server: "local", Callback: tTestConsume, Count: 5},
 	"report": {Queue: "golkp.report", Server: "local", Callback: tTestConsume, Count: 0},
 }
 
@@ -73,26 +73,26 @@ func TestApplication_Publish(t *testing.T) {
 	pub := amqp.Publishing{
 		Body: []byte("Hello my friend"),
 	}
-	for j := 0; j< 10000; j++ {
-		pub.Body = []byte("hello 1:"+strconv.Itoa(j))
+	for j := 0; j < 10000; j++ {
+		pub.Body = []byte("hello 1:" + strconv.Itoa(j))
 		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 2:"+strconv.Itoa(j))
+		pub.Body = []byte("hello 2:" + strconv.Itoa(j))
 		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 3:"+strconv.Itoa(j))
+		pub.Body = []byte("hello 3:" + strconv.Itoa(j))
 		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 4:"+strconv.Itoa(j))
+		pub.Body = []byte("hello 4:" + strconv.Itoa(j))
 		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 5:"+strconv.Itoa(j))
+		pub.Body = []byte("hello 5:" + strconv.Itoa(j))
 		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 6:"+strconv.Itoa(j))
+		pub.Body = []byte("hello 6:" + strconv.Itoa(j))
 		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 7:"+strconv.Itoa(j))
+		pub.Body = []byte("hello 7:" + strconv.Itoa(j))
 		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 8:"+strconv.Itoa(j))
+		pub.Body = []byte("hello 8:" + strconv.Itoa(j))
 		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 9:"+strconv.Itoa(j))
+		pub.Body = []byte("hello 9:" + strconv.Itoa(j))
 		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 10:"+strconv.Itoa(j))
+		pub.Body = []byte("hello 10:" + strconv.Itoa(j))
 		go app.Publish(pub, "golkp.test", "local")
 		time.Sleep(time.Millisecond * 1)
 	}

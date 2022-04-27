@@ -2,7 +2,7 @@ package gorabbit
 
 import (
 	"github.com/dimonrus/porterr"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 // Publish Publisher
@@ -32,7 +32,7 @@ func (a *Application) Publish(p amqp.Publishing, queue string, server string, ro
 	}
 	cp := a.sp.GetConnectionPoolOrCreate(server)
 	// Publish message
-	e = cp.Publish(p, *srv, *q,  route...)
+	e = cp.Publish(p, *srv, *q, route...)
 	if e == nil {
 		a.GetLogger().Infoln("SUCCESS PUBLISH: ", string(p.Body))
 	} else {

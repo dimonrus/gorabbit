@@ -3,7 +3,7 @@ package gorabbit
 import (
 	"github.com/dimonrus/gocli"
 	"github.com/dimonrus/porterr"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"sync"
 	"time"
 )
@@ -188,7 +188,7 @@ func (cp *ConnectionPool) GetConnection(s RabbitServer) (c *connection, e porter
 		if e != nil {
 			return
 		}
-	} else if len(cp.pool) < (cp.rps / DefaultMaxConnectionOnRPS * s.MaxConnections) && s.MaxConnections > len(cp.pool) {
+	} else if len(cp.pool) < (cp.rps/DefaultMaxConnectionOnRPS*s.MaxConnections) && s.MaxConnections > len(cp.pool) {
 		// dial until connections limit
 		e = cp.dial(s)
 		if e != nil {
