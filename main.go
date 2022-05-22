@@ -49,7 +49,7 @@ func (a *Application) GetRegistry() Registry {
 func (a *Application) Consume(name string) porterr.IError {
 	consumer, ok := a.registry[name]
 	if !ok {
-		return porterr.NewF(porterr.PortErrorParam, "Consumer '%s' not found in registry")
+		return porterr.NewF(porterr.PortErrorParam, "Consumer '%s' not found in registry", name)
 	}
 	// Get server
 	srv, e := a.GetConfig().GetServer(consumer.Server)

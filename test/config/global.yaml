@@ -18,11 +18,11 @@ rabbit:
       durable: true
   servers:
     local:
-      host: 10.10.1.120
-      vhost: golkp_dev
+      host: 10.10.10.100
+      vhost: /
       port: 5672
-      user: golkp
-      password: miiCh7ju
+      user: guest
+      password: guest
       maxPublishConnections: 15
 arguments:
   app:

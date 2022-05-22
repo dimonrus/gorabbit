@@ -20,8 +20,7 @@ type rConfig struct {
 
 var cfg rConfig
 var registry = map[string]*gorabbit.Consumer{
-	"test":   {Queue: "golkp.test", Server: "local", Callback: tTestConsume, Count: 5},
-	"report": {Queue: "golkp.report", Server: "local", Callback: tTestConsume, Count: 0},
+	"test": {Queue: "golkp.test", Server: "local", Callback: tTestConsume, Count: 5},
 }
 
 func tTestConsume(d amqp.Delivery) {
@@ -73,7 +72,7 @@ func TestApplication_Publish(t *testing.T) {
 	pub := amqp.Publishing{
 		Body: []byte("Hello my friend"),
 	}
-	for j := 0; j < 10000; j++ {
+	for j := 0; j < 100000; j++ {
 		pub.Body = []byte("hello 1:" + strconv.Itoa(j))
 		go app.Publish(pub, "golkp.test", "local")
 		pub.Body = []byte("hello 2:" + strconv.Itoa(j))

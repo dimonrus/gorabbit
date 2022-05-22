@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// RabbitMq server Pool
+// ServerPool RabbitMq server Pool
 type ServerPool struct {
 	// Connection pools
 	pool map[string]*ConnectionPool
@@ -18,7 +18,7 @@ type ServerPool struct {
 	logger gocli.Logger
 }
 
-// Init server pool
+// NewServerPool Init server pool
 func NewServerPool(l gocli.Logger) *ServerPool {
 	return &ServerPool{
 		pool:   make(map[string]*ConnectionPool),
@@ -26,21 +26,21 @@ func NewServerPool(l gocli.Logger) *ServerPool {
 	}
 }
 
-// Get connection pool
+// GetConnectionPoolOrCreate Get connection pool
 // If not - create
 func (sp *ServerPool) GetConnectionPoolOrCreate(server string) *ConnectionPool {
 	sp.m.Lock()
 	defer sp.m.Unlock()
 	if _, ok := sp.pool[server]; !ok {
 		p := NewConnectionPool()
-		go func() {
+		go func(pool *ConnectionPool) {
 			// idle connections
-			e := p.idle()
+			e := pool.idle()
 			// log error
 			if e != nil {
 				sp.logger.Errorln(e)
 			}
-		}()
+		}(p)
 		sp.pool[server] = p
 	}
 	return sp.pool[server]
@@ -52,7 +52,7 @@ type ConnectionPool struct {
 	// Uses round robin algorithm
 	pool []*connection
 	// cursor for current connection
-	cursor int
+	cursor int32
 	// Lock until using
 	m sync.Mutex
 	// flag shows that idle function in process
@@ -60,7 +60,7 @@ type ConnectionPool struct {
 	// exit
 	exit chan struct{}
 	// request per second
-	rps int
+	rps int32
 }
 
 // Init connection pool
@@ -76,7 +76,7 @@ type connection struct {
 	channel *amqp.Channel
 	// idle deadline UnixNano
 	deadline int64
-	// is unused
+	// is connection for remove
 	remove bool
 }
 
@@ -96,35 +96,28 @@ func (cp *ConnectionPool) idle() (e porterr.IError) {
 		return porterr.New(porterr.PortErrorProducer, "idle already in process")
 	}
 	cp.fIdle = true
-	defer func() {
-		cp.fIdle = false
-	}()
-	// cursor
-	var cursor int
-	// connection
-	var conn *connection
-	// current unix nano time
-	var now int64
 	for {
 		select {
 		case <-cp.exit:
+			cp.fIdle = false
 			return
 		default:
 		}
-		now = time.Now().UnixNano()
-		for cursor, conn = range cp.pool {
-			if now > conn.deadline && !conn.remove {
-				conn.remove = true
+		now := time.Now().UnixNano()
+		for cursor := range cp.pool {
+			cp.m.Lock()
+			if now > cp.pool[cursor].deadline && !cp.pool[cursor].remove {
+				cp.pool[cursor].remove = true
 			}
-			if conn.remove && (now > (conn.deadline + int64(time.Second*10))) {
+			if cp.pool[cursor].remove && (now > (cp.pool[cursor].deadline + int64(time.Second*10))) {
 				e = cp.closeConnection(cursor)
-				// for reindex
 				break
 			}
+			cp.m.Unlock()
 		}
+		cp.rps = 0
 		// Sleep second before next round
 		time.Sleep(time.Second)
-		cp.rps = 0
 	}
 }
 
@@ -188,7 +181,7 @@ func (cp *ConnectionPool) GetConnection(s RabbitServer) (c *connection, e porter
 		if e != nil {
 			return
 		}
-	} else if len(cp.pool) < (cp.rps/DefaultMaxConnectionOnRPS*s.MaxConnections) && s.MaxConnections > len(cp.pool) {
+	} else if len(cp.pool) < (int(cp.rps)/DefaultMaxConnectionOnRPS*s.MaxConnections) && s.MaxConnections > len(cp.pool) {
 		// dial until connections limit
 		e = cp.dial(s)
 		if e != nil {
@@ -196,7 +189,7 @@ func (cp *ConnectionPool) GetConnection(s RabbitServer) (c *connection, e porter
 		}
 	}
 	for {
-		if cp.cursor > len(cp.pool)-1 {
+		if int(cp.cursor) > len(cp.pool)-1 {
 			cp.cursor = 0
 		}
 		c = cp.pool[cp.cursor]
