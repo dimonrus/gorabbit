@@ -5,7 +5,7 @@ import (
 	"github.com/dimonrus/gocli"
 	"github.com/dimonrus/gohelp"
 	"github.com/dimonrus/porterr"
-	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/streadway/amqp"
 	"runtime/debug"
 	"time"
 )

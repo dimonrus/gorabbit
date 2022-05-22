@@ -1,8 +1,9 @@
 package gorabbit
 
 import (
+	"github.com/dimonrus/gohelp"
 	"github.com/dimonrus/porterr"
-	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/streadway/amqp"
 )
 
 // Publish Publisher
@@ -33,10 +34,8 @@ func (a *Application) Publish(p amqp.Publishing, queue string, server string, ro
 	cp := a.sp.GetConnectionPoolOrCreate(server)
 	// Publish message
 	e = cp.Publish(p, *srv, *q, route...)
-	if e == nil {
-		a.GetLogger().Infoln("SUCCESS PUBLISH: ", string(p.Body))
-	} else {
-		a.GetLogger().Errorln("PUBLISH ERROR: ", e.Error())
+	if e != nil {
+		a.GetLogger().Errorln(gohelp.Red("PUBLISH ERROR: " + e.Error()))
 	}
 	return e
 }

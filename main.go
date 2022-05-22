@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/dimonrus/gocli"
 	"github.com/dimonrus/porterr"
-	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/streadway/amqp"
 	"time"
 )
 
@@ -104,6 +104,10 @@ func (a *Application) Consume(name string) porterr.IError {
 	if err != nil {
 		e = porterr.NewF(porterr.PortErrorConnection, "Failed to declare a queue: '%s'", q.Name)
 		return e
+	}
+	// Default routing key. Especially for fanout exchange
+	if len(q.RoutingKey) == 0 {
+		q.RoutingKey = []string{""}
 	}
 	// Walk on routing keys
 	for _, key := range q.RoutingKey {

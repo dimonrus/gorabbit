@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"github.com/dimonrus/gocli"
 	"github.com/dimonrus/gorabbit"
-	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/streadway/amqp"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -20,11 +21,19 @@ type rConfig struct {
 
 var cfg rConfig
 var registry = map[string]*gorabbit.Consumer{
-	"test": {Queue: "golkp.test", Server: "local", Callback: tTestConsume, Count: 5},
+	"test": {Queue: "golkp.test", Server: "local", Callback: tTestConsume, Count: 0},
+	"fan":  {Queue: "golkp.fanout", Server: "local", Callback: tTestConsumeFanout, Count: 2},
 }
 
 func tTestConsume(d amqp.Delivery) {
 	fmt.Println("Тестовое сообщение успешно получено: " + string(d.Body))
+}
+
+var fanoutProcessed int32
+
+func tTestConsumeFanout(d amqp.Delivery) {
+	atomic.AddInt32(&fanoutProcessed, 1)
+	fmt.Println("Тестовое сообщение успешно получено: "+string(d.Body), " - ", fanoutProcessed)
 }
 
 // Init test application
@@ -95,6 +104,22 @@ func TestApplication_Publish(t *testing.T) {
 		go app.Publish(pub, "golkp.test", "local")
 		time.Sleep(time.Millisecond * 1)
 	}
+	app.GetLogger().Infoln("End publish!!!")
+	c := make(chan int)
+	<-c
+}
+
+func TestApplication_PublishFanout(t *testing.T) {
+	app := testInitApp()
+	pub := amqp.Publishing{
+		Body: []byte("Hello my friend"),
+	}
+	for j := 0; j < 10; j++ {
+		pub.Body = []byte("hello 1:" + strconv.Itoa(j))
+		go app.Publish(pub, "golkp.fanout", "local", "#")
+		time.Sleep(time.Millisecond * 1)
+	}
+	app.GetLogger().Infoln("End publish!!!")
 	c := make(chan int)
 	<-c
 }

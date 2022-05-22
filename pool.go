@@ -3,8 +3,9 @@ package gorabbit
 import (
 	"github.com/dimonrus/gocli"
 	"github.com/dimonrus/porterr"
-	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/streadway/amqp"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -115,7 +116,7 @@ func (cp *ConnectionPool) idle() (e porterr.IError) {
 			}
 			cp.m.Unlock()
 		}
-		cp.rps = 0
+		atomic.StoreInt32(&cp.rps, 0)
 		// Sleep second before next round
 		time.Sleep(time.Second)
 	}
@@ -156,7 +157,7 @@ func (cp *ConnectionPool) dial(s RabbitServer) (e porterr.IError) {
 	if err := c.channel.Confirm(false); err != nil {
 		return porterr.NewF(porterr.PortErrorProducer, "Confirm mode set failed: %s ", err.Error())
 	}
-	c.deadline = time.Now().Add(s.MaxIdleConnectionLifeTime).UnixNano()
+	atomic.StoreInt64(&c.deadline, time.Now().Add(s.MaxIdleConnectionLifeTime).UnixNano())
 	cp.pool = append(cp.pool, c)
 	return
 }
@@ -203,7 +204,7 @@ func (cp *ConnectionPool) GetConnection(s RabbitServer) (c *connection, e porter
 		break
 	}
 	// increase rps counter
-	cp.rps++
+	atomic.AddInt32(&cp.rps, 1)
 	return
 }
 

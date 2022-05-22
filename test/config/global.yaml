@@ -10,11 +10,9 @@ rabbit:
       routingKey:
         - golkp-test-message
       durable: true
-    golkp.report:
-      exchange: amq.direct
-      type: direct
-      routingKey:
-        - golkp-report
+    golkp.fanout:
+      exchange: amq.fanout
+      type: fanout
       durable: true
   servers:
     local:
