@@ -4,6 +4,7 @@ import (
 	"github.com/dimonrus/gohelp"
 	"github.com/dimonrus/porterr"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"time"
 )
 
 // Publish Publisher
@@ -33,9 +34,9 @@ func (a *Application) Publish(p amqp.Publishing, queue string, server string, ro
 	}
 	cp := a.sp.GetConnectionPoolOrCreate(server, srv.MaxConnections)
 	// Publish message
-	e = cp.Publish(p, *srv, *q, route...)
-	if e != nil {
+	for e = cp.Publish(p, *srv, *q, route...); e != nil; {
 		a.GetLogger().Errorln(gohelp.Red("PUBLISH ERROR: " + e.Error()))
+		time.Sleep(time.Millisecond * 1000)
 	}
 	return e
 }

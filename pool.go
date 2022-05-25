@@ -89,8 +89,13 @@ type connection struct {
 	busy int32
 }
 
+// IsBusy check if connection is busy
+func (c *connection) IsBusy() bool {
+	return atomic.LoadInt32(&c.busy) != 0
+}
+
 // Publish message
-func (c *connection) Publish(exchange, key string, mandatory, immediate bool, msg amqp.Publishing, idle time.Duration) (e porterr.IError) {
+func (c *connection) Publish(exchange, key string, mandatory, immediate bool, msg amqp.Publishing) (e porterr.IError) {
 	atomic.StoreInt32(&c.busy, 1)
 	defer func() {
 		atomic.AddInt64(&c.limitRate, 1)
@@ -121,19 +126,14 @@ func (cp *ConnectionPool) idle(logger gocli.Logger) (e porterr.IError) {
 		cp.m.Lock()
 		if cp.pool[i] != nil && atomic.LoadInt32(&cp.pool[i].busy) == 0 {
 			if atomic.LoadInt64(&cp.pool[i].limitRate)-MaxMessagesPerConnection >= 0 {
-				logger.Infoln(cp.pool[i].limitRate)
-				e = cp.closeConnection(i)
+				e = cp.reopenChannel(i)
 				if e != nil {
-					logger.Error(e.Error())
-				} else {
-					logger.Infoln("closed conn by rate: ", i)
+					logger.Errorln(e.Error())
 				}
 			} else if atomic.LoadInt64(&cp.pool[i].deadline) < time.Now().UnixNano() {
 				e = cp.closeConnection(i)
 				if e != nil {
-					logger.Error(e.Error())
-				} else {
-					logger.Infoln("closed conn: ", i)
+					logger.Errorln(e.Error())
 				}
 			}
 		}
@@ -142,13 +142,26 @@ func (cp *ConnectionPool) idle(logger gocli.Logger) (e porterr.IError) {
 			i = 0
 		}
 		cp.m.Unlock()
-		time.Sleep(time.Millisecond * 50)
+		time.Sleep(time.Millisecond * 100)
 	}
 }
 
 // Close connection
+func (cp *ConnectionPool) reopenChannel(cursor int) (e porterr.IError) {
+	err := cp.pool[cursor].channel.Close()
+	if err != nil {
+		e = porterr.NewF(porterr.PortErrorProducer, "Can't close channel: %s", err.Error())
+	}
+	cp.pool[cursor].channel, err = cp.pool[cursor].conn.Channel()
+	if err != nil {
+		e = porterr.NewF(porterr.PortErrorProducer, "Can't open channel: %s", err.Error())
+	}
+	atomic.StoreInt64(&cp.pool[cursor].limitRate, 0)
+	return e
+}
+
+// Close connection
 func (cp *ConnectionPool) closeConnection(cursor int) (e porterr.IError) {
-	atomic.StoreInt32(&cp.pool[cursor].busy, 1)
 	err := cp.pool[cursor].channel.Close()
 	if err != nil {
 		e = porterr.NewF(porterr.PortErrorProducer, "Can't close channel: %s", err.Error())
@@ -164,8 +177,7 @@ func (cp *ConnectionPool) closeConnection(cursor int) (e porterr.IError) {
 // Dial to rabbit mq
 func (cp *ConnectionPool) dial(s RabbitServer) (c *connection, e porterr.IError) {
 	c = &connection{
-		limitRate: MaxMessagesPerConnection,
-		deadline:  time.Now().Add(s.MaxIdleConnectionLifeTime).UnixNano(),
+		deadline: time.Now().Add(s.MaxIdleConnectionLifeTime).UnixNano(),
 	}
 	var err error
 	c.conn, err = amqp.Dial(s.String())
@@ -192,8 +204,13 @@ func (cp *ConnectionPool) GetConnection(s RabbitServer) (c *connection, e porter
 	var i = gohelp.GetRndNumber(0, s.MaxConnections)
 	for {
 		if cp.pool[i] != nil {
-			if atomic.LoadInt32(&cp.pool[i].busy) == 0 {
-				return cp.pool[i], nil
+			if !cp.pool[i].IsBusy() && !cp.pool[i].conn.IsClosed() && !cp.pool[i].channel.IsClosed() {
+				c = cp.pool[i]
+				return
+			} else if cp.pool[i].conn.IsClosed() || cp.pool[i].channel.IsClosed() {
+				cp.pool[i], e = cp.dial(s)
+				c = cp.pool[i]
+				return
 			}
 		} else {
 			cp.pool[i], e = cp.dial(s)
@@ -216,7 +233,7 @@ func (cp *ConnectionPool) Publish(p amqp.Publishing, s RabbitServer, q RabbitQue
 	}
 	// Publish to all routing keys
 	for _, key := range route {
-		err := conn.Publish(q.Exchange, key, false, false, p, s.MaxIdleConnectionLifeTime)
+		err := conn.Publish(q.Exchange, key, false, false, p)
 		if err != nil {
 			e = porterr.NewF(porterr.PortErrorProducer, err.Error())
 			break

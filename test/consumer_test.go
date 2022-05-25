@@ -81,29 +81,24 @@ func TestApplication_Publish(t *testing.T) {
 	pub := amqp.Publishing{
 		Body: []byte("Hello my friend"),
 	}
-	for j := 0; j < 100000; j++ {
-		pub.Body = []byte("hello 1:" + strconv.Itoa(j))
-		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 2:" + strconv.Itoa(j))
-		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 3:" + strconv.Itoa(j))
-		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 4:" + strconv.Itoa(j))
-		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 5:" + strconv.Itoa(j))
-		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 6:" + strconv.Itoa(j))
-		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 7:" + strconv.Itoa(j))
-		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 8:" + strconv.Itoa(j))
-		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 9:" + strconv.Itoa(j))
-		go app.Publish(pub, "golkp.test", "local")
-		pub.Body = []byte("hello 10:" + strconv.Itoa(j))
-		go app.Publish(pub, "golkp.test", "local")
-		time.Sleep(time.Millisecond * 1)
+	commonLimit := 10_000
+	rateLimit := 15
+	limit := make(chan struct{}, rateLimit)
+	for j := 0; j < commonLimit+rateLimit; j++ {
+		limit <- struct{}{}
+		if j >= commonLimit {
+			continue
+		}
+		go func(i int, pub amqp.Publishing) {
+			defer func() { <-limit }()
+			pub.Body = []byte("hello:" + strconv.Itoa(i))
+			e := app.Publish(pub, "golkp.test", "local")
+			if e != nil {
+				app.GetLogger().Errorln(e)
+			}
+		}(j, pub)
 	}
+	close(limit)
 	app.GetLogger().Infoln("End publish!!!")
 	c := make(chan int)
 	<-c
