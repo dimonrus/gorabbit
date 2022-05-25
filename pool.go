@@ -2,12 +2,16 @@ package gorabbit
 
 import (
 	"github.com/dimonrus/gocli"
+	"github.com/dimonrus/gohelp"
 	"github.com/dimonrus/porterr"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"sync"
 	"sync/atomic"
 	"time"
 )
+
+// MaxMessagesPerConnection will close connection on reach limit
+const MaxMessagesPerConnection = int64(50000)
 
 // ServerPool RabbitMq server Pool
 type ServerPool struct {
@@ -29,14 +33,14 @@ func NewServerPool(l gocli.Logger) *ServerPool {
 
 // GetConnectionPoolOrCreate Get connection pool
 // If not - create
-func (sp *ServerPool) GetConnectionPoolOrCreate(server string) *ConnectionPool {
+func (sp *ServerPool) GetConnectionPoolOrCreate(server string, maxConnections int) *ConnectionPool {
 	sp.m.Lock()
 	defer sp.m.Unlock()
 	if _, ok := sp.pool[server]; !ok {
-		p := NewConnectionPool()
+		p := NewConnectionPool(maxConnections)
 		go func(pool *ConnectionPool) {
 			// idle connections
-			e := pool.idle()
+			e := pool.idle(sp.logger)
 			// log error
 			if e != nil {
 				sp.logger.Errorln(e)
@@ -47,7 +51,7 @@ func (sp *ServerPool) GetConnectionPoolOrCreate(server string) *ConnectionPool {
 	return sp.pool[server]
 }
 
-// Connection pool
+// ConnectionPool Connection pool
 type ConnectionPool struct {
 	// Connection pool
 	// Uses round robin algorithm
@@ -64,9 +68,11 @@ type ConnectionPool struct {
 	rps int32
 }
 
-// Init connection pool
-func NewConnectionPool() *ConnectionPool {
-	return &ConnectionPool{}
+// NewConnectionPool Init connection pool
+func NewConnectionPool(maxConnection int) *ConnectionPool {
+	return &ConnectionPool{
+		pool: make([]*connection, maxConnection),
+	}
 }
 
 // Connection struct
@@ -75,28 +81,36 @@ type connection struct {
 	conn *amqp.Connection
 	// amqp channel
 	channel *amqp.Channel
+	// limit for message rate
+	limitRate int64
 	// idle deadline UnixNano
 	deadline int64
-	// is connection for remove
-	remove bool
+	// 0 - when connection is not busy
+	busy int32
 }
 
 // Publish message
-func (c *connection) Publish(exchange, key string, mandatory, immediate bool, msg amqp.Publishing) (e porterr.IError) {
+func (c *connection) Publish(exchange, key string, mandatory, immediate bool, msg amqp.Publishing, idle time.Duration) (e porterr.IError) {
+	atomic.StoreInt32(&c.busy, 1)
+	defer func() {
+		atomic.AddInt64(&c.limitRate, 1)
+		atomic.StoreInt32(&c.busy, 0)
+	}()
 	// channel publish
 	err := c.channel.Publish(exchange, key, mandatory, immediate, msg)
 	if err != nil {
-		e = porterr.NewF(porterr.PortErrorProducer, "exchange publish: %s", err.Error())
+		e = porterr.NewF(porterr.PortErrorProducer, err.Error())
 	}
 	return
 }
 
 // Init idle worker fo pool
-func (cp *ConnectionPool) idle() (e porterr.IError) {
+func (cp *ConnectionPool) idle(logger gocli.Logger) (e porterr.IError) {
 	if cp.fIdle {
 		return porterr.New(porterr.PortErrorProducer, "idle already in process")
 	}
 	cp.fIdle = true
+	var i int
 	for {
 		select {
 		case <-cp.exit:
@@ -104,28 +118,37 @@ func (cp *ConnectionPool) idle() (e porterr.IError) {
 			return
 		default:
 		}
-		now := time.Now().UnixNano()
-		for cursor := range cp.pool {
-			cp.m.Lock()
-			if now > cp.pool[cursor].deadline && !cp.pool[cursor].remove {
-				cp.pool[cursor].remove = true
+		cp.m.Lock()
+		if cp.pool[i] != nil && atomic.LoadInt32(&cp.pool[i].busy) == 0 {
+			if atomic.LoadInt64(&cp.pool[i].limitRate)-MaxMessagesPerConnection >= 0 {
+				logger.Infoln(cp.pool[i].limitRate)
+				e = cp.closeConnection(i)
+				if e != nil {
+					logger.Error(e.Error())
+				} else {
+					logger.Infoln("closed conn by rate: ", i)
+				}
+			} else if atomic.LoadInt64(&cp.pool[i].deadline) < time.Now().UnixNano() {
+				e = cp.closeConnection(i)
+				if e != nil {
+					logger.Error(e.Error())
+				} else {
+					logger.Infoln("closed conn: ", i)
+				}
 			}
-			if cp.pool[cursor].remove && (now > (cp.pool[cursor].deadline + int64(time.Second*10))) {
-				e = cp.closeConnection(cursor)
-				break
-			}
-			cp.m.Unlock()
 		}
-		atomic.StoreInt32(&cp.rps, 0)
-		// Sleep second before next round
-		time.Sleep(time.Second)
+		i++
+		if i == len(cp.pool) {
+			i = 0
+		}
+		cp.m.Unlock()
+		time.Sleep(time.Millisecond * 50)
 	}
 }
 
 // Close connection
 func (cp *ConnectionPool) closeConnection(cursor int) (e porterr.IError) {
-	cp.m.Lock()
-	defer cp.m.Unlock()
+	atomic.StoreInt32(&cp.pool[cursor].busy, 1)
 	err := cp.pool[cursor].channel.Close()
 	if err != nil {
 		e = porterr.NewF(porterr.PortErrorProducer, "Can't close channel: %s", err.Error())
@@ -134,14 +157,16 @@ func (cp *ConnectionPool) closeConnection(cursor int) (e porterr.IError) {
 	if err != nil {
 		e = porterr.NewF(porterr.PortErrorProducer, "Can't close connection: %s", err.Error())
 	}
-	// remove connection from pool
-	cp.pool = append(cp.pool[:cursor], cp.pool[cursor+1:]...)
+	cp.pool[cursor] = nil
 	return e
 }
 
 // Dial to rabbit mq
-func (cp *ConnectionPool) dial(s RabbitServer) (e porterr.IError) {
-	c := &connection{}
+func (cp *ConnectionPool) dial(s RabbitServer) (c *connection, e porterr.IError) {
+	c = &connection{
+		limitRate: MaxMessagesPerConnection,
+		deadline:  time.Now().Add(s.MaxIdleConnectionLifeTime).UnixNano(),
+	}
 	var err error
 	c.conn, err = amqp.Dial(s.String())
 	if err != nil {
@@ -154,58 +179,32 @@ func (cp *ConnectionPool) dial(s RabbitServer) (e porterr.IError) {
 		return
 	}
 	// Set confirm mode
-	if err := c.channel.Confirm(false); err != nil {
-		return porterr.NewF(porterr.PortErrorProducer, "Confirm mode set failed: %s ", err.Error())
-	}
-	atomic.StoreInt64(&c.deadline, time.Now().Add(s.MaxIdleConnectionLifeTime).UnixNano())
-	cp.pool = append(cp.pool, c)
-	return
-}
-
-// Count how many connections must be removed from pool
-func (cp *ConnectionPool) getRemovedCount() (count int) {
-	for _, c := range cp.pool {
-		if c.remove {
-			count++
-		}
+	if err = c.channel.Confirm(false); err != nil {
+		e = porterr.NewF(porterr.PortErrorProducer, "Confirm mode set failed: %s ", err.Error())
 	}
 	return
 }
 
-// Get current connection using round robin algorithm
+// GetConnection Get current connection using round robin algorithm
 func (cp *ConnectionPool) GetConnection(s RabbitServer) (c *connection, e porterr.IError) {
 	cp.m.Lock()
 	defer cp.m.Unlock()
-	if len(cp.pool) == 0 || len(cp.pool) == cp.getRemovedCount() {
-		// dial first connection
-		e = cp.dial(s)
-		if e != nil {
-			return
-		}
-	} else if len(cp.pool) < (int(cp.rps)/DefaultMaxConnectionOnRPS*s.MaxConnections) && s.MaxConnections > len(cp.pool) {
-		// dial until connections limit
-		e = cp.dial(s)
-		if e != nil {
-			return
-		}
-	}
+	var i = gohelp.GetRndNumber(0, s.MaxConnections)
 	for {
-		if int(cp.cursor) > len(cp.pool)-1 {
-			cp.cursor = 0
+		if cp.pool[i] != nil {
+			if atomic.LoadInt32(&cp.pool[i].busy) == 0 {
+				return cp.pool[i], nil
+			}
+		} else {
+			cp.pool[i], e = cp.dial(s)
+			c = cp.pool[i]
+			return
 		}
-		c = cp.pool[cp.cursor]
-		if c.remove {
-			cp.cursor++
-			continue
+		i++
+		if i == len(cp.pool) {
+			i = 0
 		}
-		// update deadline
-		c.deadline = time.Now().Add(s.MaxIdleConnectionLifeTime).UnixNano()
-		cp.cursor++
-		break
 	}
-	// increase rps counter
-	atomic.AddInt32(&cp.rps, 1)
-	return
 }
 
 // Publish message to queue
@@ -217,10 +216,9 @@ func (cp *ConnectionPool) Publish(p amqp.Publishing, s RabbitServer, q RabbitQue
 	}
 	// Publish to all routing keys
 	for _, key := range route {
-		err := conn.Publish(q.Exchange, key, false, false, p)
+		err := conn.Publish(q.Exchange, key, false, false, p, s.MaxIdleConnectionLifeTime)
 		if err != nil {
-			conn.remove = true
-			e = porterr.NewF(porterr.PortErrorProducer, "exchange publish: %s", err.Error())
+			e = porterr.NewF(porterr.PortErrorProducer, err.Error())
 			break
 		}
 	}

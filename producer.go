@@ -3,7 +3,7 @@ package gorabbit
 import (
 	"github.com/dimonrus/gohelp"
 	"github.com/dimonrus/porterr"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 // Publish Publisher
@@ -31,7 +31,7 @@ func (a *Application) Publish(p amqp.Publishing, queue string, server string, ro
 	if len(route) == 0 {
 		route = append(route, "")
 	}
-	cp := a.sp.GetConnectionPoolOrCreate(server)
+	cp := a.sp.GetConnectionPoolOrCreate(server, srv.MaxConnections)
 	// Publish message
 	e = cp.Publish(p, *srv, *q, route...)
 	if e != nil {

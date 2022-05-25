@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/dimonrus/gocli"
 	"github.com/dimonrus/gorabbit"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -21,7 +21,7 @@ type rConfig struct {
 
 var cfg rConfig
 var registry = map[string]*gorabbit.Consumer{
-	"test": {Queue: "golkp.test", Server: "local", Callback: tTestConsume, Count: 0},
+	"test": {Queue: "golkp.test", Server: "local", Callback: tTestConsume, Count: 5},
 	"fan":  {Queue: "golkp.fanout", Server: "local", Callback: tTestConsumeFanout, Count: 2},
 }
 
