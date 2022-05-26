@@ -22,7 +22,8 @@ type rConfig struct {
 var cfg rConfig
 var registry = map[string]*gorabbit.Consumer{
 	"test": {Queue: "golkp.test", Server: "local", Callback: tTestConsume, Count: 5},
-	"fan":  {Queue: "golkp.fanout", Server: "local", Callback: tTestConsumeFanout, Count: 2},
+	"fan1": {Queue: "golkp.fanout1", Server: "local", Callback: tTestConsumeFanout, Count: 1},
+	"fan2": {Queue: "golkp.fanout2", Server: "local", Callback: tTestConsumeFanout, Count: 1},
 }
 
 func tTestConsume(d amqp.Delivery) {
@@ -81,7 +82,7 @@ func TestApplication_Publish(t *testing.T) {
 	pub := amqp.Publishing{
 		Body: []byte("Hello my friend"),
 	}
-	commonLimit := 10_000
+	commonLimit := 1_000_000
 	rateLimit := 15
 	limit := make(chan struct{}, rateLimit)
 	for j := 0; j < commonLimit+rateLimit; j++ {

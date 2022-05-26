@@ -10,7 +10,11 @@ rabbit:
       routingKey:
         - golkp-test-message
       durable: true
-    golkp.fanout:
+    golkp.fanout1:
+      exchange: amq.fanout
+      type: fanout
+      durable: true
+    golkp.fanout2:
       exchange: amq.fanout
       type: fanout
       durable: true
