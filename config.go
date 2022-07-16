@@ -20,16 +20,16 @@ type RabbitQueue struct {
 	Arguments  map[string]interface{}
 }
 
-// Consumer registry
+// Registry consumer registry
 type Registry map[string]*Consumer
 
-// Servers
+// Servers server registry
 type Servers map[string]RabbitServer
 
-// Queues
+// Queues queue registry
 type Queues map[string]RabbitQueue
 
-// Rabbit config
+// Config Rabbit config
 type Config struct {
 	// Servers configuration
 	Servers Servers
@@ -37,7 +37,7 @@ type Config struct {
 	Queues Queues
 }
 
-// Get server
+// GetServer Get server
 func (c *Config) GetServer(name string) (*RabbitServer, porterr.IError) {
 	server, ok := c.Servers[name]
 	if !ok {
@@ -49,7 +49,7 @@ func (c *Config) GetServer(name string) (*RabbitServer, porterr.IError) {
 	return &server, nil
 }
 
-// Get queue
+// GetQueue Get queue
 func (c *Config) GetQueue(name string) (*RabbitQueue, porterr.IError) {
 	queue, ok := c.Queues[name]
 	if !ok {

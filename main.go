@@ -26,6 +26,7 @@ func NewApplication(config Config, app gocli.Application) *Application {
 		config:      config,
 		Application: app,
 		sp:          NewServerPool(app.GetLogger()),
+		registry:    make(Registry),
 	}
 }
 
