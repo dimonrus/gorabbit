@@ -11,7 +11,7 @@ RabbitMq queue consuming and producing
 # Producing features
 1. Reusing connection.
 2. Implemented connection pool.
-3. Manage max connections by config file.
+3. Manage max connections via config file.
 4. Free connection in idle status after 10s
 
 # Allowed commands
