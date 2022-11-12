@@ -3,9 +3,9 @@ module github.com/dimonrus/gorabbit
 go 1.18
 
 require (
-	github.com/dimonrus/gocli v0.9.8
+	github.com/dimonrus/gocli v0.9.9
 	github.com/dimonrus/gohelp v1.1.1
-	github.com/dimonrus/porterr v1.11.2
+	github.com/dimonrus/porterr v1.11.3
 	github.com/rabbitmq/amqp091-go v1.5.0
 )
 
