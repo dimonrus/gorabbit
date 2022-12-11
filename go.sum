@@ -1,10 +1,10 @@
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dimonrus/gocli v0.9.9 h1:Lt9Zh0Qob6THgE7BPTnXm0aaGvwEqT96TWB+yLSPxbM=
-github.com/dimonrus/gocli v0.9.9/go.mod h1:Rh6XYKHe4IGpL7+E9GnPN3lZvnbPz4ADmvChJVsCmoE=
+github.com/dimonrus/gocli v0.10.0 h1:tCoAo4je0eOZ/CGU9mOHowKWZZbXAWzmzcvegMwfjIc=
+github.com/dimonrus/gocli v0.10.0/go.mod h1:5NMukoKXGlZcipjLiUnFlba0qKSTVkCh0mYUpLikw6c=
 github.com/dimonrus/gohelp v1.1.1 h1:oCHQ7WpCKv4DYwO1C8y3dLDGLYHWcszd7byY4wyvDIA=
 github.com/dimonrus/gohelp v1.1.1/go.mod h1:0zBPZxKW6rn2NEMWiCxyswKTdqM6UnSFrbR5H846ujk=
-github.com/dimonrus/porterr v1.11.3 h1:3W0cZxdGKxjPomEJWiADC0xfW1VERrdAReTq4m8Laq0=
-github.com/dimonrus/porterr v1.11.3/go.mod h1:BCVpaUyYdawPPzeAa8yjCYvemctND1I9ER/nFnOyDgQ=
+github.com/dimonrus/porterr v1.13.1 h1:hToohI8rweDANCJSiHBP7XXTWwU48yjoYY+/4WoWAQY=
+github.com/dimonrus/porterr v1.13.1/go.mod h1:BCVpaUyYdawPPzeAa8yjCYvemctND1I9ER/nFnOyDgQ=
 github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
