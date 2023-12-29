@@ -6,7 +6,7 @@ require (
 	github.com/dimonrus/gocli v0.12.2
 	github.com/dimonrus/gohelp v1.2.0
 	github.com/dimonrus/porterr v1.13.1
-	github.com/rabbitmq/amqp091-go v1.8.1
+	github.com/rabbitmq/amqp091-go v1.9.0
 )
 
 require gopkg.in/yaml.v3 v3.0.1 // indirect
