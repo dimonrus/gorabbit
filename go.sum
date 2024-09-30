@@ -1,7 +1,7 @@
-github.com/dimonrus/gocli v0.12.2 h1:GwWfWk0HmbNzqs9fPDZZ1PjQkE0E5OLa3SRsqOvJVUA=
-github.com/dimonrus/gocli v0.12.2/go.mod h1:F5bvRk0Xp9YH3sMSCum3OhsPsBKktmZIsMbXU1RMqA0=
-github.com/dimonrus/gohelp v1.2.0 h1:c8IBr20/bPGNWgFsAajytRQQj0aJY9SO8ow6fjZmbVg=
-github.com/dimonrus/gohelp v1.2.0/go.mod h1:0zBPZxKW6rn2NEMWiCxyswKTdqM6UnSFrbR5H846ujk=
+github.com/dimonrus/gocli v0.12.3 h1:h8Fl+gdaptNoasAarlfkfbrp57E1kRuvXEtvq+1lu7U=
+github.com/dimonrus/gocli v0.12.3/go.mod h1:IIYZXjT/pwdlQqzzL7Y1OrdkKU3ruByXYSv2tNWMwGA=
+github.com/dimonrus/gohelp v1.3.0 h1:wod6WCJnakLbNCfqsP2Md50Pg38TEJBKKxtoqneDQsc=
+github.com/dimonrus/gohelp v1.3.0/go.mod h1:0zBPZxKW6rn2NEMWiCxyswKTdqM6UnSFrbR5H846ujk=
 github.com/dimonrus/porterr v1.13.1 h1:hToohI8rweDANCJSiHBP7XXTWwU48yjoYY+/4WoWAQY=
 github.com/dimonrus/porterr v1.13.1/go.mod h1:BCVpaUyYdawPPzeAa8yjCYvemctND1I9ER/nFnOyDgQ=
 github.com/rabbitmq/amqp091-go v1.10.0 h1:STpn5XsHlHGcecLmMFCtg7mqq0RnD+zFr4uzukfVhBw=
