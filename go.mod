@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/dimonrus/gocli v0.12.3
-	github.com/dimonrus/gohelp v1.3.0
+	github.com/dimonrus/gohelp v1.5.0
 	github.com/dimonrus/porterr v1.13.1
 	github.com/rabbitmq/amqp091-go v1.10.0
 )
