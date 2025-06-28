@@ -4,15 +4,16 @@ RabbitMq queue consuming and producing
 # Consuming features
 1. Manage subscribers on the fly using socket. 
 2. Auto reconnect when connection failed.
-3. Auto nack on panic and panic recover. Application will not crash. Except unrecovered panics.
+3. Auto nack on panic and panic recover.
 4. Multiple server and multiple queues implementation supports in config(yaml) files.
-5. Callback registry. Allows to create a callback for each queue.
+5. Callback registry. Allows you to create a callback for each queue.
+6. Support for prefetch and streams
 
 # Producing features
 1. Reusing connection.
 2. Implemented connection pool.
-3. Manage max connections via config file.
-4. Free connection in idle status after 10s
+3. Manage max connections via a config file.
+4. Free connection in idle status after the 10s
 
 # Allowed commands
 1. **consumer start all** - _start all consumer defined in registry_
