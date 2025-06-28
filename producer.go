@@ -33,7 +33,7 @@ func (a *Application) Publish(p amqp.Publishing, queue string, server string, ro
 		route = append(route, "")
 	}
 	cp := a.sp.GetConnectionPoolOrCreate(server, srv.MaxConnections)
-	// Publish message
+	// Publish a message
 	for e = cp.Publish(p, *srv, *q, route...); e != nil; {
 		a.GetLogger().Errorln(gohelp.Red("PUBLISH ERROR: " + e.Error()))
 		time.Sleep(time.Millisecond * 1000)

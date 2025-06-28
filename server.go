@@ -6,15 +6,15 @@ import (
 )
 
 const (
-	// Default value for max conn
+	// DefaultMaxConnections Default value for max conn
 	DefaultMaxConnections = 10
-	// Default value for max idle lifetime
+	// DefaultMaxIdleConnectionLifeTime Default value for max idle lifetime
 	DefaultMaxIdleConnectionLifeTime = 10 * time.Second
-	// Maximum connection on 5000 rps
+	// DefaultMaxConnectionOnRPS Maximum connection on 5000 rps
 	DefaultMaxConnectionOnRPS = 5000
 )
 
-// Server configuration
+// RabbitServer Server configuration
 type RabbitServer struct {
 	// RabbitMQx virtual host
 	Vhost string

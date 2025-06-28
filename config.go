@@ -4,20 +4,37 @@ import (
 	"github.com/dimonrus/porterr"
 )
 
-// Queue configuration
+// RabbitQueue Queue configuration
 type RabbitQueue struct {
-	Server     string
-	Exchange   string
-	Internal   bool
-	Type       string
-	Name       string
-	Passive    bool
-	Durable    bool
-	Exclusive  bool
-	Nowait     bool
-	AutoDelete bool     `yaml:"autoDelete"`
+	// Name of server
+	Server string
+	// Name of exchange
+	Exchange string
+	// Do not accept publishing
+	Internal bool
+	// The common types are "direct", "fanout", "topic" and "headers".
+	Type string
+	// Name for queue
+	Name string
+	// DEPRECATED Always false
+	Passive bool
+	// Durable and Non-Auto-Deleted exchanges will survive server restarts and remain
+	// declared when there are no remaining bindings.
+	Durable bool
+	// Exclusive queues are only accessible by the connection that declares them and
+	// will be deleted when the connection closes.
+	Exclusive bool
+	// When noWait is true, the queue will assume it to be declared on the server.
+	Nowait bool
+	// Durable and Auto-Deleted queues will be restored on server restart, but without
+	// active consumers will not survive and be removed.
+	AutoDelete bool `yaml:"autoDelete"`
+	// Prefetch settings
+	Prefetch Prefetch
+	// List of routing keys for queue
 	RoutingKey []string `yaml:"routingKey"`
-	Arguments  map[string]interface{}
+	// Queue custom arguments
+	Arguments map[string]interface{}
 }
 
 // Registry consumer registry
@@ -31,10 +48,23 @@ type Queues map[string]RabbitQueue
 
 // Config Rabbit config
 type Config struct {
-	// Servers configuration
+	// Server configurations
 	Servers Servers
 	// Queues configuration
 	Queues Queues
+}
+
+// Prefetch options
+type Prefetch struct {
+	// count of prefetch items
+	Count int
+	// Size of prefetch
+	Size int
+}
+
+// IsEmpty is prefetch empty
+func (p Prefetch) IsEmpty() bool {
+	return p.Count == 0 && p.Size == 0
 }
 
 // GetServer Get server

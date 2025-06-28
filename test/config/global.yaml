@@ -4,24 +4,32 @@ project:
   debug: true
 rabbit:
   queues:
-    golkp.test:
+    rmq.test:
       exchange: amq.direct
       type: direct
       routingKey:
         - golkp-test-message
       durable: true
-    golkp.fanout1:
+    rmq.fanout:
       exchange: amq.fanout
       type: fanout
       durable: true
-    golkp.fanout2:
+    rmq.fanout1:
       exchange: amq.fanout
       type: fanout
       durable: true
+    rmq.fanout2:
+      exchange: amq.fanout
+      type: fanout
+      durable: true
+#      arguments:
+#        x-queue-type: "stream"
+#      prefetch:
+#        count: 1000
   servers:
     local:
-      host: 10.10.10.100
-      vhost: /
+      host: 0.0.0.0
+      vhost: \
       port: 5672
       user: guest
       password: guest

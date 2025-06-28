@@ -54,7 +54,7 @@ func (sp *ServerPool) GetConnectionPoolOrCreate(server string, maxConnections in
 // ConnectionPool Connection pool
 type ConnectionPool struct {
 	// Connection pool
-	// Uses round robin algorithm
+	// Uses round-robin algorithm
 	pool []*connection
 	// cursor for current connection
 	cursor int32
@@ -197,7 +197,7 @@ func (cp *ConnectionPool) dial(s RabbitServer) (c *connection, e porterr.IError)
 	return
 }
 
-// GetConnection Get current connection using round robin algorithm
+// GetConnection Get current connection using round-robin algorithm
 func (cp *ConnectionPool) GetConnection(s RabbitServer) (c *connection, e porterr.IError) {
 	cp.m.Lock()
 	defer cp.m.Unlock()
@@ -224,9 +224,9 @@ func (cp *ConnectionPool) GetConnection(s RabbitServer) (c *connection, e porter
 	}
 }
 
-// Publish message to queue
+// Publish a message to queue
 func (cp *ConnectionPool) Publish(p amqp.Publishing, s RabbitServer, q RabbitQueue, route ...string) (e porterr.IError) {
-	// Get connection with initiated channel
+	// Get connection with an initiated channel
 	conn, e := cp.GetConnection(s)
 	if e != nil {
 		return

@@ -49,7 +49,7 @@ func (c *Consumer) Stop() {
 	c.stop <- struct{}{}
 }
 
-// Check for subscribers
+// HasSubscribers Check for subscribers
 func (c *Consumer) HasSubscribers() bool {
 	if len(c.subscribers) > 0 {
 		return true
@@ -57,12 +57,12 @@ func (c *Consumer) HasSubscribers() bool {
 	return false
 }
 
-// Get s subscribers
+// SubscribersCount Get s subscribers
 func (c *Consumer) SubscribersCount() uint8 {
 	return uint8(len(c.subscribers))
 }
 
-// New subscribers
+// NewSubscriber New subscribers
 func (c *Consumer) NewSubscriber(name string) *subscriber {
 	return &subscriber{
 		name: name,
@@ -74,7 +74,7 @@ func (c *Consumer) NewSubscriber(name string) *subscriber {
 func (c *Consumer) Subscribe(logger gocli.Logger) porterr.IError {
 	for num := uint8(0); num < c.Count; num++ {
 		logger.Infof(`Subscribe '%s' queue on server '%s'`, c.Queue, c.Server)
-		// If consumer not created
+		// If consumer isn't created
 		if c == nil || c.queue == nil || c.connection == nil || c.channel == nil {
 			return porterr.NewF(porterr.PortErrorParam, "Init consumer first")
 		}

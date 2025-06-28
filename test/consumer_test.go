@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"fmt"
 	"github.com/dimonrus/gocli"
 	"github.com/dimonrus/gorabbit"
@@ -21,16 +22,30 @@ type rConfig struct {
 
 var cfg rConfig
 var registry = map[string]*gorabbit.Consumer{
-	"test": {Queue: "golkp.test", Server: "local", Callback: tTestConsume, Count: 5},
-	"fan1": {Queue: "golkp.fanout1", Server: "local", Callback: tTestConsumeFanout, Count: 1},
-	"fan2": {Queue: "golkp.fanout2", Server: "local", Callback: tTestConsumeFanout, Count: 1},
+	"test": {Queue: "rmq.test", Server: "local", Callback: tTestConsume, Count: 5},
+	"fan1": {Queue: "rmq.fanout1", Server: "local", Callback: tTestConsumeFanout, Count: 1},
+	"fan2": {Queue: "rmq.fanout2", Server: "local", Callback: tTestConsumeFanout, Count: 1},
 }
 
 func tTestConsume(d amqp.Delivery) {
-	fmt.Println("Тестовое сообщение успешно получено: " + string(d.Body))
+	atomic.AddInt32(&fanoutProcessed, 1)
+	//fmt.Println("Тестовое сообщение успешно получено: " + string(d.Body))
 }
 
 var fanoutProcessed int32
+
+func idle(ctx context.Context, t *testing.T) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			t.Log(atomic.LoadInt32(&fanoutProcessed))
+		case <-ctx.Done():
+			return
+		}
+	}
+}
 
 func tTestConsumeFanout(d amqp.Delivery) {
 	atomic.AddInt32(&fanoutProcessed, 1)
@@ -69,9 +84,13 @@ func TestApplication_Consume(t *testing.T) {
 	// Wait for OS signal
 	forever := make(chan os.Signal, 1)
 
+	ctx := context.Background()
+	go idle(ctx, t)
+
 	a.GetLogger().Info(" [*] Waiting for messages. To exit press CTRL+C")
 	signal.Notify(forever, os.Interrupt)
 	<-forever
+	ctx.Done()
 
 	a.GetLogger().Info(" [*] All Consumers is shutting down")
 	os.Exit(0)
@@ -84,22 +103,21 @@ func TestApplication_Publish(t *testing.T) {
 	}
 	commonLimit := 1_000_000
 	rateLimit := 15
-	limit := make(chan struct{}, rateLimit)
-	for j := 0; j < commonLimit+rateLimit; j++ {
-		limit <- struct{}{}
-		if j >= commonLimit {
-			continue
-		}
-		go func(i int, pub amqp.Publishing) {
-			defer func() { <-limit }()
-			pub.Body = []byte("hello:" + strconv.Itoa(i))
-			e := app.Publish(pub, "golkp.test", "local")
-			if e != nil {
-				app.GetLogger().Errorln(e)
+	value := make(chan int)
+	for i := 0; i < rateLimit; i++ {
+		go func(i chan int, pub amqp.Publishing) {
+			for v := range i {
+				pub.Body = []byte("hello:" + strconv.Itoa(v))
+				e := app.Publish(pub, "golkp.test", "local")
+				if e != nil {
+					t.Fatal(e)
+				}
 			}
-		}(j, pub)
+		}(value, pub)
 	}
-	close(limit)
+	for j := 0; j < commonLimit; j++ {
+		value <- j
+	}
 	app.GetLogger().Infoln("End publish!!!")
 	c := make(chan int)
 	<-c
@@ -110,12 +128,13 @@ func TestApplication_PublishFanout(t *testing.T) {
 	pub := amqp.Publishing{
 		Body: []byte("Hello my friend"),
 	}
-	for j := 0; j < 10; j++ {
+	for j := 0; j < 100000; j++ {
 		pub.Body = []byte("hello 1:" + strconv.Itoa(j))
-		go app.Publish(pub, "golkp.fanout", "local", "#")
-		time.Sleep(time.Millisecond * 1)
+		e := app.Publish(pub, "rmq.fanout", "local", "#")
+		if e != nil {
+			t.Fatal(e)
+		}
 	}
 	app.GetLogger().Infoln("End publish!!!")
-	c := make(chan int)
-	<-c
+	time.Sleep(time.Second * 10)
 }

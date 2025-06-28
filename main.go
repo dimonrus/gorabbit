@@ -119,6 +119,13 @@ func (a *Application) Consume(name string) porterr.IError {
 			return e
 		}
 	}
+	// If prefetch defined
+	if !q.Prefetch.IsEmpty() {
+		// Set prefetchCount to allow messages before Acks are returned
+		if err = consumer.channel.Qos(q.Prefetch.Count, q.Prefetch.Size, false); err != nil {
+			return porterr.NewF(porterr.PortErrorParam, "Prefetch error: ", err.Error())
+		}
+	}
 	ce := make(chan *amqp.Error)
 	// Listen unexpected close the channel
 	go func() {

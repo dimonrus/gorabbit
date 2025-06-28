@@ -6,19 +6,19 @@ import (
 )
 
 const (
-	CommandStart = "start"
-	CommandStop = "stop"
-	CommandRestart = "restart"
-	CommandStatus = "status"
+	CommandStart    = "start"
+	CommandStop     = "stop"
+	CommandRestart  = "restart"
+	CommandStatus   = "status"
 	CommandConsumer = "consumer"
-	CommandSet = "set"
+	CommandSet      = "set"
 
-	CommandKeyWordAll = "all"
+	CommandKeyWordAll   = "all"
 	CommandKeyWordCount = "count"
 )
 
-// Parse gocli.Command
-func ParseCommand(command *gocli.Command) (action string, arguments []gocli.Argument, e porterr.IError)  {
+// ParseCommand parse gocli.Command
+func ParseCommand(command *gocli.Command) (action string, arguments []gocli.Argument, e porterr.IError) {
 	args := command.Arguments()
 	if len(args) > 0 {
 		if args[0].Name != CommandConsumer {
