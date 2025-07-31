@@ -16,7 +16,7 @@ import (
 )
 
 type rConfig struct {
-	Arguments gocli.Arguments
+	Arguments gocli.ArgumentMap
 	Rabbit    gorabbit.Config
 }
 
@@ -60,7 +60,7 @@ func testInitApp() *gorabbit.Application {
 	}
 
 	app := gocli.NewApplication("global", rootPath+"/config", &cfg)
-	app.ParseFlags(&cfg.Arguments)
+	app.ParseFlags(cfg.Arguments)
 
 	a := gorabbit.NewApplication(cfg.Rabbit, app).SetRegistry(registry)
 
@@ -108,7 +108,7 @@ func TestApplication_Publish(t *testing.T) {
 		go func(i chan int, pub amqp.Publishing) {
 			for v := range i {
 				pub.Body = []byte("hello:" + strconv.Itoa(v))
-				e := app.Publish(pub, "golkp.test", "local")
+				e := app.Publish(pub, "rmq.test", "local")
 				if e != nil {
 					t.Fatal(e)
 				}
