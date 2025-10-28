@@ -1,13 +1,14 @@
 package gorabbit
 
 import (
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/dimonrus/gocli"
 	"github.com/dimonrus/gohelp"
 	"github.com/dimonrus/porterr"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 // MaxMessagesPerConnection will close connection on reach limit
@@ -148,6 +149,10 @@ func (cp *ConnectionPool) idle(logger gocli.Logger) (e porterr.IError) {
 
 // Close connection
 func (cp *ConnectionPool) reopenChannel(cursor int) (e porterr.IError) {
+	if cp.pool[cursor] == nil || cp.pool[cursor].channel == nil {
+		e = porterr.New(porterr.PortErrorProducer, "Can't close channel: channel is undefined")
+		return
+	}
 	err := cp.pool[cursor].channel.Close()
 	if err != nil {
 		e = porterr.NewF(porterr.PortErrorProducer, "Can't close channel: %s", err.Error())
@@ -162,6 +167,10 @@ func (cp *ConnectionPool) reopenChannel(cursor int) (e porterr.IError) {
 
 // Close connection
 func (cp *ConnectionPool) closeConnection(cursor int) (e porterr.IError) {
+	if cp.pool[cursor] == nil || cp.pool[cursor].channel == nil {
+		e = porterr.New(porterr.PortErrorProducer, "Can't close channel: channel is undefined")
+		return
+	}
 	err := cp.pool[cursor].channel.Close()
 	if err != nil {
 		e = porterr.NewF(porterr.PortErrorProducer, "Can't close channel: %s", err.Error())
