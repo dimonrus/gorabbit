@@ -2,12 +2,13 @@ package gorabbit
 
 import (
 	"fmt"
+	"runtime/debug"
+	"time"
+
 	"github.com/dimonrus/gocli"
 	"github.com/dimonrus/gohelp"
 	"github.com/dimonrus/porterr"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"runtime/debug"
-	"time"
 )
 
 // Consumer entity
@@ -59,7 +60,7 @@ func (c *Consumer) HasSubscribers() bool {
 
 // SubscribersCount Get s subscribers
 func (c *Consumer) SubscribersCount() uint8 {
-	return uint8(len(c.subscribers))
+	return uint8(len(c.subscribers) & 0xFF)
 }
 
 // NewSubscriber New subscribers

@@ -2,10 +2,11 @@ package gorabbit
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/dimonrus/gocli"
 	"github.com/dimonrus/porterr"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"time"
 )
 
 // Application Rabbit application struct
@@ -277,7 +278,7 @@ func (a *Application) ConsumerCommander(command *gocli.Command) {
 							a.GetRegistry()[name].Stop()
 						}
 						a.SuccessMessage(fmt.Sprintf("Consumer '%s' set subscribers count to: %v ", name, count), command)
-						a.GetRegistry()[name].Count = uint8(count)
+						a.GetRegistry()[name].Count = uint8(count & 0xFF)
 						go func(n string) {
 							e := a.Consume(n)
 							if e != nil {
